@@ -32,10 +32,6 @@ set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
 
 add_subdirectory(libpng ${CMAKE_CURRENT_BINARY_DIR}/libpng EXCLUDE_FROM_ALL)
 
-if( WIN32 ) 
-configure_file(libpng/scripts/pnglibconf.h.prebuilt libpng/pnglibconf.h)
-endif()
-
 set(IMGUI_SOURCE_FILES cimgui/cimgui.cpp
                        cimgui/imgui/imgui.cpp 
                        cimgui/imgui/imgui_draw.cpp 
