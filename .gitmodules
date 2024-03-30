@@ -1,0 +1,25 @@
+[submodule "libs/glew-cmake"]
+	path = libs/glew-cmake
+	url = https://github.com/Perlmint/glew-cmake.git
+[submodule "libs/libpng"]
+	path = libs/libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "libs/zlib"]
+	path = libs/zlib
+	url = https://github.com/madler/zlib
+[submodule "libs/SDL"]
+	path = libs/SDL
+	url = https://github.com/libsdl-org/SDL
+	branch = release-2.26.x
+[submodule "libs/libsamplerate"]
+	path = libs/libsamplerate
+	url = https://github.com/libsndfile/libsamplerate
+[submodule "libs/ImGuiFileDialog"]
+	path = libs/ImGuiFileDialog
+	url = https://github.com/AdrianoDiDio/ImGuiFileDialog.git
+[submodule "libs/cglm"]
+	path = libs/cglm
+	url = https://github.com/recp/cglm
+[submodule "libs/cimgui"]
+	path = libs/cimgui
+	url = https://github.com/cimgui/cimgui
