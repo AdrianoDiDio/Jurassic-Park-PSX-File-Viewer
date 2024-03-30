@@ -59,9 +59,6 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_PVS_STUDIO_ANALYZER=OFF \
             -G Ninja \
-      - name: Setup Windows upterm session
-        if: startsWith(matrix.config.name, 'Windows')
-        uses: lhotari/action-upterm@v1
       - name: Build
         run: cmake --build Build --parallel
       - name: Upload artifact

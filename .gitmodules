@@ -16,7 +16,7 @@
 	url = https://github.com/libsndfile/libsamplerate
 [submodule "libs/ImGuiFileDialog"]
 	path = libs/ImGuiFileDialog
-	url = https://github.com/AdrianoDiDio/ImGuiFileDialog.git
+	url = https://github.com/aiekick/ImGuiFileDialog.git
 [submodule "libs/cglm"]
 	path = libs/cglm
 	url = https://github.com/recp/cglm
