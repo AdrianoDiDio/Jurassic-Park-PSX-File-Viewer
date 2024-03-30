@@ -174,8 +174,6 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
             }
             if( igTreeNodeEx_Str(PackIterator->Name,TreeNodeFlags) ) {
                 igSameLine(0,-1);
-                igText(PackIterator->GameVersion == MOH_GAME_STANDARD ? "MOH" : "MOH:Underground");
-                igSameLine(0,-1);
                 //NOTE(Adriano):We do not allow for duplicated BSD however since we support both MOH and MOH:Underground then
                 //this could be confusing since the ID would for example be 2_1 for both versions when loading Mission 2 Level 1.
                 //In order to solve this we just append the GameVersion in order to obtain the final Id which will be
