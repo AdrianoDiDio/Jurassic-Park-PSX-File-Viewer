@@ -614,9 +614,9 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
             
         } else {
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert0],
-                                    TSP->Color[Vert0],U1,V1,CLUTDestX,CLUTDestY,ColorMode);
+                                    TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode);
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert1],
-                                    TSP->Color[Vert1],U0,V0,CLUTDestX,CLUTDestY,ColorMode);
+                                    TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode);
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert2],
                                     TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode);
             
@@ -1443,7 +1443,6 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
                         fread(&Pad,sizeof(Pad),1,InFile);
                         TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
                         DPrintf("Pad %i;%i\n",Pad.u,Pad.v);
-//                            TSPSkipFileChunk(InFile,/*30*/12);
                         CurrentFaceIndex++;
                         break;
                     case 2:
@@ -1462,19 +1461,7 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
                         fread(&Pad,sizeof(Pad),1,InFile);
                         TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
                         DPrintf("Pad %i;%i\n",Pad.u,Pad.v);
-//                             TSPSkipFileChunk(InFile,20/*38*/);
                         CurrentFaceIndex++;
-                        
-//                             fread(&TSP->Node[i].FaceList[CurrentFaceIndex],sizeof(TSPFace_t),1,InFile);
-//                             fread(&Pad,sizeof(Pad),1,InFile);
-//                             TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
-//                             CurrentFaceIndex++;
-//                             //Next 18 bytes
-//                             fread(&Pad,sizeof(Pad),1,InFile);
-//                             fread(&TSP->Node[i].FaceList[CurrentFaceIndex],sizeof(TSPFace_t),1,InFile);
-//                             fread(&Pad,sizeof(Pad),1,InFile);
-//                             TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
-//                             CurrentFaceIndex++;
                         break;
                     default:
                         break;
@@ -1983,6 +1970,7 @@ TSP_t *TSPLoad(FILE *TSPFile,int TSPOffset)
     DPrintf("NumColors:%i ColorOffset:%i\n",TSP->Header.NumColors,TSP->Header.ColorOffset);
     DPrintf("NumC:%i COffset:%i\n",TSP->Header.NumC,TSP->Header.COffset);
 
+    //NOTE(Adriano):We need to add the current TSP offset since it is hosted inside the BSD file
     TSP->Header.NodeOffset += TSPOffset;
     TSP->Header.FaceOffset += TSPOffset;
     TSP->Header.VertexOffset += TSPOffset;

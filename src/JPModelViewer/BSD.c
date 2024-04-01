@@ -754,6 +754,8 @@ int BSDRenderObjectSetAnimationPose(BSDRenderObject_t *RenderObject,int Animatio
     }
     return 1;
 }
+//TODO(Adriano):Use this shader as the default for all the renderobjects (including TSP).
+//     Only when using TSP, enable fog by setting the uniform to true.
 int BSDCreateRenderObjectShader(BSDRenderObject_t *RenderObject)
 {
     Shader_t *Shader;
@@ -784,7 +786,7 @@ int BSDCreateRenderObjectShader(BSDRenderObject_t *RenderObject)
     RenderObject->RenderObjectShader->FogColorId = glGetUniformLocation(Shader->ProgramId,"FogColor");
     glUniform1i(RenderObject->RenderObjectShader->TextureIndexId, 0);
     glUniform1i(RenderObject->RenderObjectShader->PaletteTextureId,  1);
-    glUniform1i(RenderObject->RenderObjectShader->EnableLightingId, 0);
+    glUniform1i(RenderObject->RenderObjectShader->EnableLightingId, 1);
     glUniform1i(RenderObject->RenderObjectShader->EnableFogId, 0);
     glUniform1f(RenderObject->RenderObjectShader->FogNearId, 0);
     glGetFloatv(GL_COLOR_CLEAR_VALUE, ClearColor);
