@@ -117,7 +117,6 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
     int IsSelected;
     int DisableNode;
     char SmallBuffer[256];
-    char DeleteButtonId[32];
     int i;
     int Changed;
     ImGuiTableFlags TableFlags;
@@ -178,9 +177,8 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
                 //this could be confusing since the ID would for example be 2_1 for both versions when loading Mission 2 Level 1.
                 //In order to solve this we just append the GameVersion in order to obtain the final Id which will be
                 //in this example 2_1.BSD0 or 2_1.BSD1 thus solving any potential conflict.
-                sprintf(DeleteButtonId,"Remove##%i",PackIterator->GameVersion);
-                if( igSmallButton(DeleteButtonId) ) {
-                    if( RenderObjectManagerDeleteBSDPack(RenderObjectManager,PackIterator->Name,PackIterator->GameVersion) ) {
+                if( igSmallButton("Remove") ) {
+                    if( RenderObjectManagerDeleteBSDPack(RenderObjectManager,PackIterator->Name) ) {
                         igTreePop();
                         break;
                     }

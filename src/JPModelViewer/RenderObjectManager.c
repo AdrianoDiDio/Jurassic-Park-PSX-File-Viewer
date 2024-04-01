@@ -120,7 +120,7 @@ void RenderObjectManagerExportSelectedModelToPly(RenderObjectManager_t *RenderOb
         DPrintf("RenderObjectManagerExportCurrentPoseToPly:Invalid RenderObject\n");
         return;
     }
-    asprintf(&EngineName,"%s",(CurrentBSDPack->GameVersion == MOH_GAME_STANDARD) ? "MOH" : "MOHUndergound");
+    EngineName = StringCopy("JP");
     asprintf(&FileName,"RenderObject-%u-%i-%s.ply",CurrentRenderObject->Id,CurrentRenderObject->CurrentAnimationIndex,EngineName);
     asprintf(&PlyFile,"%s%c%s",Directory,PATH_SEPARATOR,FileName);
     BSDName = SwitchExt(CurrentBSDPack->Name,"");
@@ -260,7 +260,7 @@ void RenderObjectManagerAppendBSDPack(RenderObjectManager_t *RenderObjectManager
         LastNode->Next = BSDPack;
     }
 }
-int RenderObjectManagerDeleteBSDPackFromList(RenderObjectManager_t *RenderObjectManager,const char *BSDPackName,int GameVersion)
+int RenderObjectManagerDeleteBSDPackFromList(RenderObjectManager_t *RenderObjectManager,const char *BSDPackName)
 {
     BSDRenderObjectPack_t *Temp;
     BSDRenderObjectPack_t *Current;
@@ -269,7 +269,7 @@ int RenderObjectManagerDeleteBSDPackFromList(RenderObjectManager_t *RenderObject
     Current = RenderObjectManager->BSDList;
     Previous = NULL;
     while( Current ) {
-        if( !strcmp(Current->Name,BSDPackName) && Current->GameVersion == GameVersion) {
+        if( !strcmp(Current->Name,BSDPackName)) {
             Temp = Current;
             if( !Previous ) {
                 RenderObjectManager->BSDList = Current->Next;
@@ -288,9 +288,9 @@ int RenderObjectManagerDeleteBSDPackFromList(RenderObjectManager_t *RenderObject
     }
     return 0;
 }
-int RenderObjectManagerDeleteBSDPack(RenderObjectManager_t *RenderObjectManager,const char *BSDPackName,int GameVersion)
+int RenderObjectManagerDeleteBSDPack(RenderObjectManager_t *RenderObjectManager,const char *BSDPackName)
 {
-    if( RenderObjectManagerDeleteBSDPackFromList(RenderObjectManager,BSDPackName,GameVersion) ) {
+    if( RenderObjectManagerDeleteBSDPackFromList(RenderObjectManager,BSDPackName) ) {
         //NOTE(Adriano):If the selected BSD pack belonged to the deleted one...then it now should be invalid....
         if( !RenderObjectManager->SelectedBSDPack ) {
             RenderObjectManagerSetDefaultSelection(RenderObjectManager);
@@ -299,11 +299,11 @@ int RenderObjectManagerDeleteBSDPack(RenderObjectManager_t *RenderObjectManager,
     }
     return 0;
 }
-BSDRenderObjectPack_t *RenderObjectManagerGetBSDPack(RenderObjectManager_t *RenderObjectManager,const char *Name,int GameVersion)
+BSDRenderObjectPack_t *RenderObjectManagerGetBSDPack(RenderObjectManager_t *RenderObjectManager,const char *Name)
 {
     BSDRenderObjectPack_t *Iterator;
     for( Iterator = RenderObjectManager->BSDList; Iterator; Iterator = Iterator->Next ) {
-        if( !strcmp(Iterator->Name,Name) && Iterator->GameVersion == GameVersion) {
+        if( !strcmp(Iterator->Name,Name)) {
             return Iterator;
         }
     }
@@ -360,13 +360,13 @@ int RenderObjectManagerLoadBSD(RenderObjectManager_t *RenderObjectManager,GUI_t 
         }
     }
     ProgressBarIncrement(GUI->ProgressBar,VideoSystem,20,"Loading all RenderObjects");
-    BSDPack->RenderObjectList = BSDLoadAllAnimatedRenderObjects(File,&BSDPack->GameVersion);
+    BSDPack->RenderObjectList = BSDLoadAllRenderObjects(File);
     if( !BSDPack->RenderObjectList ) {
         DPrintf("RenderObjectManagerLoadBSD:Failed to load render objects from file\n");
         ErrorCode = RENDER_OBJECT_MANAGER_BSD_ERROR_NO_ANIMATED_RENDEROBJECTS;
         goto Failure;
     }
-    if( RenderObjectManagerGetBSDPack(RenderObjectManager,BSDPack->Name,BSDPack->GameVersion) != NULL ) {
+    if( RenderObjectManagerGetBSDPack(RenderObjectManager,BSDPack->Name) != NULL ) {
         DPrintf("RenderObjectManagerLoadBSD:Duplicated found in list!\n");
         ErrorCode = RENDER_OBJECT_MANAGER_BSD_ERROR_ALREADY_LOADED;
         goto Failure;

@@ -43,7 +43,6 @@ typedef enum {
 //              here...this allows for multiple BSD files to be loaded without overlapping VRAMs.
 typedef struct BSDRenderObjectPack_s {
     char                            *Name;
-    int                             GameVersion;
     VRAM_t                          *VRAM;
     TIMImage_t                      *ImageList;
     BSDRenderObject_t               *RenderObjectList;
@@ -76,7 +75,7 @@ extern Config_t *EnableWireFrameMode;
 extern Config_t *EnableAmbientLight;
 
 RenderObjectManager_t   *RenderObjectManagerInit(GUI_t *GUI);
-int                     RenderObjectManagerDeleteBSDPack(RenderObjectManager_t *RenderObjectManager,const char *BSDPackName,int GameVersion);
+int                     RenderObjectManagerDeleteBSDPack(RenderObjectManager_t *RenderObjectManager,const char *BSDPackName);
 void                    RenderObjectManagerOpenFileDialog(RenderObjectManager_t *RenderObjectManager,GUI_t *GUI,VideoSystem_t *VideoSystem);
 void                    RenderObjectManagerExportSelectedModel(RenderObjectManager_t *RenderObjectManager,
                                                              GUI_t *GUI,VideoSystem_t *VideoSystem,int OutputFormat,bool ExportCurrentAnimation);

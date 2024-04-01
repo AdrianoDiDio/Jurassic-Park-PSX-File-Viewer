@@ -307,9 +307,9 @@ typedef struct BSD_s {
 
 typedef struct Camera_s Camera_t;
 
-BSDRenderObject_t       *BSDLoadAllAnimatedRenderObjects(const char *FName,int *GameVersion);
-void                    BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,const VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
-void                    BSDDrawRenderObject(BSDRenderObject_t *RenderObject,const VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
+BSDRenderObject_t       *BSDLoadAllRenderObjects(const char *FName);
+void                    BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
+void                    BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
 void                    BSDRecursivelyApplyHierachyData(const BSDHierarchyBone_t *Bone,const BSDQuaternion_t *QuaternionList,
                                                     BSDVertexTable_t *VertexTable,mat4 TransformMatrix);
 int                     BSDRenderObjectSetAnimationPose(BSDRenderObject_t *RenderObject,int AnimationIndex,int FrameIndex,int Override);

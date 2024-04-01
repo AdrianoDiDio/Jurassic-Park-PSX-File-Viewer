@@ -452,7 +452,7 @@ void BSDRenderObjectGenerateStaticVAO(BSDRenderObject_t *RenderObject)
         Vert2 = RenderObject->Face[i].Vert2;
 
         VRAMPage = RenderObject->Face[i].FacePackets[0].TexInfo & 0x1F;
-        //HACK(Adriano):Just to test if everything work we need to skip this faces from the normal pipeline in order
+        //HACK(Adriano):Just to test if everything is working we need to skip this faces from the normal pipeline in order
         //to not discard them
         ColorMode = RenderObject->Face[i].IsTextured ? (RenderObject->Face[i].FacePackets[0].TexInfo & 0xC0) >> 7 : 50;
         U0 = RenderObject->Face[i].FacePackets[0].UV0.u + VRAMGetTexturePageX(VRAMPage);
@@ -806,7 +806,7 @@ int BSDCreateRenderObjectShader(BSDRenderObject_t *RenderObject)
     glUseProgram(0);
     return 1;
 }
-void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,const VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix)
+void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix)
 {
     int EnableLightingId;
     int PaletteTextureId;
@@ -890,7 +890,7 @@ void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,const VRAM_t *VRAM,Came
     }
 }
 
-void BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,const VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix)
+void BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix)
 {
     BSDRenderObject_t *Iterator;
     int i;
@@ -1025,73 +1025,8 @@ void BSDAppendRenderObjectToList(BSDRenderObject_t **List,BSDRenderObject_t *Nod
         LastNode->Next = Node;
     }
 }
-/*
- * NOTE(Adriano):
- * Some RenderObjects uses the 'ReferencedRenderObjectId' field to reference a RenderObject that contains common
- * informations shared by multiple RenderObjects.
- * In order to correctly parse these entry we need to copy the field from the 'ReferencedRenderObjectId' to the RenderObject that
- * requested it.
- * NOTE(Adriano):Make sure to update the data when new fields are added.
- */
-void BSDPatchRenderObjects(BSD_t *BSD,FILE *BSDFile,int GameEngine)
-{
-    BSDRenderObjectElement_t *CurrentRenderObject;
-    BSDRenderObjectElement_t *ReferencedRenderObject;
-    int i;
-        
-    for( i = 0; i < BSD->RenderObjectTable.NumRenderObject; i++ ) {
-        if( BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId == -1 ) {
-            continue;
-        }
-        ReferencedRenderObject = BSDGetRenderObjectById(BSD,BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId);
-        CurrentRenderObject = &BSD->RenderObjectTable.RenderObject[i];
-        if( !ReferencedRenderObject ) {
-            DPrintf("BSDPatchRenderObjects:RenderObject Id %i not found\n",BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId);
-            continue;
-        }
-        DPrintf("BSDPatchRenderObjects:Patching up RenderObject Id %i using Id %i\n",BSD->RenderObjectTable.RenderObject[i].Id,
-            BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId
-        );
-        if(CurrentRenderObject->AnimationDataOffset == -1 ) {
-            CurrentRenderObject->AnimationDataOffset = ReferencedRenderObject->AnimationDataOffset;
-        }
-        if(CurrentRenderObject->FaceOffset == -1 ) {
-            CurrentRenderObject->FaceOffset = ReferencedRenderObject->FaceOffset;
-        }
-        if(CurrentRenderObject->FaceTableOffset == -1 ) {
-            CurrentRenderObject->FaceTableOffset = ReferencedRenderObject->FaceTableOffset;
-        }
-        if(CurrentRenderObject->VertexTableIndexOffset == -1 ) {
-            CurrentRenderObject->VertexTableIndexOffset = ReferencedRenderObject->VertexTableIndexOffset;
-        }
-        if(CurrentRenderObject->UnknownOffset4 == -1 ) {
-            CurrentRenderObject->UnknownOffset4 = ReferencedRenderObject->UnknownOffset4;
-        }
-        if(CurrentRenderObject->VertexOffset == -1 ) {
-            CurrentRenderObject->VertexOffset = ReferencedRenderObject->VertexOffset;
-            CurrentRenderObject->NumVertex = ReferencedRenderObject->NumVertex;
-        }
-        if(CurrentRenderObject->HierarchyDataRootOffset == -1 ) {
-            CurrentRenderObject->HierarchyDataRootOffset = ReferencedRenderObject->HierarchyDataRootOffset;
-        }
-        if(CurrentRenderObject->ColorOffset == -1 ) {
-            CurrentRenderObject->ColorOffset = ReferencedRenderObject->ColorOffset;
-        }
-        if(CurrentRenderObject->AnimationDataOffset == -1 ) {
-            CurrentRenderObject->AnimationDataOffset = ReferencedRenderObject->AnimationDataOffset;
-        }
-        if( CurrentRenderObject->ScaleX == 0 && CurrentRenderObject->ScaleY == 0 && CurrentRenderObject->ScaleZ == 0 ) {
-            CurrentRenderObject->ScaleX = ReferencedRenderObject->ScaleX;
-            CurrentRenderObject->ScaleY = ReferencedRenderObject->ScaleY;
-            CurrentRenderObject->ScaleZ = ReferencedRenderObject->ScaleZ;
 
-        }
-        if( CurrentRenderObject->Type == -1 ) {
-            CurrentRenderObject->Type = ReferencedRenderObject->Type;
-        }
-    }
-}
-int BSDReadRenderObjectChunk(BSD_t *BSD,int GameEngine,FILE *BSDFile)
+int BSDReadRenderObjectChunk(BSD_t *BSD,FILE *BSDFile)
 {
     int FirstRenderObjectPosition;
     int i;
@@ -1157,7 +1092,6 @@ int BSDReadRenderObjectChunk(BSD_t *BSD,int GameEngine,FILE *BSDFile)
                 BSD->RenderObjectTable.RenderObject[i].ScaleZ / 4);
  
     }
-    //BSDPatchRenderObjects(BSD,BSDFile,GameEngine);
     return 1;
 }
 
@@ -1268,127 +1202,9 @@ void BSDPrintAnimatedModelFace(BSDAnimatedModelFace_t Face)
     DPrintf("Table Index1 %i Data %i.\n",Face.VertexTableIndex1&0x1F,Face.VertexTableDataIndex1);
     DPrintf("Table Index2 %i Data %i.\n",Face.VertexTableIndex2&0x1F,Face.VertexTableDataIndex2);
 }
-/*
- * NOTE(Adriano):
- * MOH:Underground stores face data in a different way than the one used by Medal Of Honor.
- * In order to obtain the offset we need to first read the Global Face Offset which is stored at position
- * 0x5A4 and the total number of faces stored at 0x5A8 (both offset are stored without counting the header size 2048).
- * Then we need to load the data from the RenderObject stored at position 0x106 (as a short) and 0x108 that are needed to load all the
- * required faces.
- * Data at 0x106 contains the number of faces that we need to load while the offset at 0x108 contains the local offset that must
- * be added to the global one in order to obtain the final face data position inside the BSD file.
- */
-int BSDLoadMOHUndergroundAnimationFaceData(BSDRenderObject_t *RenderObject,int FaceTableOffset,int RenderObjectIndex,
-                                           int ReferencedRenderObjectIndex,BSDEntryTable_t EntryTable,FILE *BSDFile)
-{
-    int GlobalFaceOffset;
-    int LocalFaceOffset;
-    short NumFaces;
-    int ReferencedLocalFaceOffset;
-    short ReferencedNumFaces;
-    int CurrentFaceIndex;
-    short Marker1;
-    short Marker2;
-    BSDColor_t ColorData;
-    BSDAnimatedModelFace_t TempFace;
 
-    if( !RenderObject || !BSDFile ) {
-        bool InvalidFile = (BSDFile == NULL ? true : false);
-        printf("BSDLoadMOHUndergroundAnimationFaceData: Invalid %s\n",InvalidFile ? "file" : "RenderObject struct");
-        return 0;
-    }
-    fseek(BSDFile,BSD_RENDER_OBJECT_STARTING_OFFSET + BSD_HEADER_SIZE,SEEK_SET);
-    fread(&GlobalFaceOffset,sizeof(GlobalFaceOffset),1,BSDFile);
-    fseek(BSDFile,16 + (RenderObjectIndex * MOH_UNDERGROUND_RENDER_OBJECT_SIZE) + 262,SEEK_CUR);
-    fread(&NumFaces,sizeof(NumFaces),1,BSDFile);
-    fread(&LocalFaceOffset,sizeof(LocalFaceOffset),1,BSDFile);
-    if( ReferencedRenderObjectIndex != -1 ) {
-        fseek(BSDFile,16 + (ReferencedRenderObjectIndex * MOH_UNDERGROUND_RENDER_OBJECT_SIZE) + 262,SEEK_CUR);
-        fread(&ReferencedNumFaces,sizeof(NumFaces),1,BSDFile);
-        fread(&ReferencedLocalFaceOffset,sizeof(LocalFaceOffset),1,BSDFile);
-        if( !NumFaces ) {
-            NumFaces = ReferencedNumFaces;
-        }
-        if( LocalFaceOffset == -1 ) {
-            LocalFaceOffset = ReferencedLocalFaceOffset;
-        }
-    }
-
-    if( !NumFaces ) {
-        DPrintf("BSDLoadMOHUndergroundAnimationFaceData:Invalid number of faces.\n");
-        return 0;
-    }
-    //NOTE(Adriano):Now we can load the faces at the offset specified by the RenderObject.
-    fseek(BSDFile,GlobalFaceOffset + LocalFaceOffset + BSD_HEADER_SIZE,SEEK_SET);
-    DPrintf("BSDLoadMOHUndergroundAnimationFaceData:Reading %i faces at offset %li (%li)\n",NumFaces,ftell(BSDFile),ftell(BSDFile) - 2048);
-    
-    RenderObject->FaceList = malloc(NumFaces * sizeof(BSDAnimatedModelFace_t));
-    RenderObject->NumFaces = NumFaces;
-    if( !RenderObject->FaceList ) {
-        DPrintf("BSDLoadMOHUndergroundAnimationFaceData:Failed to allocate memory for face list.\n");
-        return 0;
-    }
-    CurrentFaceIndex = 0;
-    while( CurrentFaceIndex < NumFaces ) {
-        DPrintf("Reading it at %li\n",ftell(BSDFile) - 2048);
-        fread(&TempFace,sizeof(BSDAnimatedModelFace_t),1,BSDFile);
-    
-        BSDCopyAnimatedModelFace(TempFace,&RenderObject->FaceList[CurrentFaceIndex]);
-        
-        DPrintf(" -- FACE %i --\n",CurrentFaceIndex);
-        BSDPrintAnimatedModelFace(RenderObject->FaceList[CurrentFaceIndex]);
-        CurrentFaceIndex++;
-        while( 1 ) {
-            //NOTE(Adriano):
-            //Data is split into two shorts.
-            //First one (Marker1) contains data that references the VertexTable while the
-            //other one (Marker2) contains the UV coordinates for the new vertex.
-            fread(&Marker1,sizeof(Marker1),1,BSDFile);
-            fread(&Marker2,sizeof(Marker2),1,BSDFile);
-
-            if( Marker1 == 0x1FFF ) {
-                DPrintf("BSDLoadMOHUndergroundAnimationFaceData:Aborting since a marker was found\n");
-                break;
-            }
-            fread(&ColorData,sizeof(ColorData),1,BSDFile);
-                    
-            if( (Marker1 & 0x80) != 0 ) {
-                TempFace.VertexTableIndex0 = TempFace.VertexTableIndex2;
-                TempFace.VertexTableDataIndex0 = TempFace.VertexTableDataIndex2;                
-                TempFace.UV0 = TempFace.UV2;
-                TempFace.RGB0 = TempFace.RGB2;
-            } else {
-                TempFace.VertexTableIndex0 = TempFace.VertexTableIndex1;
-                TempFace.VertexTableDataIndex0 = TempFace.VertexTableDataIndex1;
-                TempFace.VertexTableIndex1 = TempFace.VertexTableIndex2;
-                TempFace.VertexTableDataIndex1 = TempFace.VertexTableDataIndex2;
-                TempFace.UV0 = TempFace.UV1;
-                TempFace.UV1 = TempFace.UV2;
-                TempFace.RGB0 = TempFace.RGB1;
-                TempFace.RGB1 = TempFace.RGB2;
-            }
-            TempFace.VertexTableDataIndex2 = Marker1 >> 8;
-            TempFace.VertexTableIndex2 = Marker1 & 0x1F;
-            TempFace.UV2.u = Marker2 & 0xff;
-            TempFace.UV2.v = Marker2 >> 8;
-            TempFace.RGB2 = ColorData;
-            BSDCopyAnimatedModelFace(TempFace,&RenderObject->FaceList[CurrentFaceIndex]);
-            DPrintf(" -- FACE %i --\n",CurrentFaceIndex);
-            BSDPrintAnimatedModelFace(RenderObject->FaceList[CurrentFaceIndex]);
-            CurrentFaceIndex++;
-        }
-        //NOTE(Adriano):Last Data is identified by the two marker being set to 0x1FFF
-        if( (Marker1 == 0x1fff && Marker2 == 0x1fff ) ) {
-            DPrintf("BSDLoadMOHUndergroundAnimationFaceData:Sentinel Face found Done reading faces for RenderObject\n");
-            DPrintf("BSDLoadMOHUndergroundAnimationFaceData:Loaded %i faces (Expected %i)\n",CurrentFaceIndex,NumFaces);
-            break;
-        }
-    }
-    assert(CurrentFaceIndex == NumFaces);
-    return 1;
-}
-int BSDLoadAnimationFaceData(BSDRenderObject_t *RenderObject,int FaceTableOffset,int RenderObjectIndex,int ReferencedRenderObjectIndex,
-                             BSDEntryTable_t EntryTable,FILE *BSDFile,int GameVersion)
+int BSDLoadAnimationFaceData(BSDRenderObject_t *RenderObject,int FaceTableOffset,int RenderObjectIndex,
+                             BSDEntryTable_t EntryTable,FILE *BSDFile)
 {
     int GlobalFaceTableOffset;
     int GlobalFaceDataOffset;
@@ -1402,14 +1218,8 @@ int BSDLoadAnimationFaceData(BSDRenderObject_t *RenderObject,int FaceTableOffset
         return 0;
     }
     if( FaceTableOffset == -1 ) {
-        if( GameVersion == MOH_GAME_UNDERGROUND ) {
-            DPrintf("BSDLoadAnimationFaceData:Game is MOH:Underground...attempting to use a different face loader.\n");
-            return BSDLoadMOHUndergroundAnimationFaceData(RenderObject,FaceTableOffset,RenderObjectIndex,ReferencedRenderObjectIndex,
-                                                          EntryTable,BSDFile);
-        } else {
-            DPrintf("BSDLoadAnimationFaceData:Invalid Face Table Index Offset\n");
-            return 0;
-        }
+        DPrintf("BSDLoadAnimationFaceData:Invalid Face Table Index Offset\n");
+        return 0;
     }
     GlobalFaceTableOffset = EntryTable.AnimationFaceTableOffset + FaceTableOffset + BSD_HEADER_SIZE;
     fseek(BSDFile,GlobalFaceTableOffset,SEEK_SET);
@@ -1785,12 +1595,8 @@ int BSDParseRenderObjectFaceData(BSDRenderObject_t *RenderObject,BSDRenderObject
     unsigned int   Vert1;
     unsigned int   Vert2;
     unsigned int   PackedVertexData;
-    char           PadBeforeTexInfo[8];
-    short          PadAfter;
     int            FaceListSize;
     int            i;
-    char           FaceV2Pad[12];
-    int            CPad;
     
     if( !RenderObject ) {
         DPrintf("BSDParseRenderObjectFaceData:Invalid RenderObject!\n");
@@ -1833,7 +1639,7 @@ int BSDParseRenderObjectFaceData(BSDRenderObject_t *RenderObject,BSDRenderObject
         }
         DPrintf("Reading vertex data at %i\n",GetCurrentFilePosition(BSDFile) - FirstFaceDef);
         fread(&PackedVertexData,sizeof(PackedVertexData),1,BSDFile);
-        DPrintf("Face size is %li (expected 84 bytes)\n",GetCurrentFilePosition(BSDFile) - FaceInitOff);
+        DPrintf("Face size is %i (expected 84 bytes)\n",GetCurrentFilePosition(BSDFile) - FaceInitOff);
         DPrintf("Tex info %i | Color mode %i | Texture Page %i\n",RenderObject->Face[i].TexInfo,
                 (RenderObject->Face[i].TexInfo & 0xC0) >> 7,RenderObject->Face[i].TexInfo & 0x1f);
         DPrintf("CBA is %i %ix%i\n",RenderObject->Face[i].CBA,
@@ -1864,8 +1670,7 @@ int BSDParseRenderObjectFaceData(BSDRenderObject_t *RenderObject,BSDRenderObject
     return 1;
 }
 BSDRenderObject_t *BSDLoadAnimatedRenderObject(BSDRenderObjectElement_t RenderObjectElement,BSDEntryTable_t BSDEntryTable,FILE *BSDFile,
-                                               int RenderObjectIndex,int ReferencedRenderObjectIndex,int GameVersion
-)
+                                               int RenderObjectIndex)
 {
     BSDRenderObject_t *RenderObject;
     
@@ -1903,8 +1708,8 @@ BSDRenderObject_t *BSDLoadAnimatedRenderObject(BSDRenderObjectElement_t RenderOb
         goto Failure;
     }
 
-    if( !BSDLoadAnimationFaceData(RenderObject,RenderObjectElement.FaceTableOffset,RenderObjectIndex,ReferencedRenderObjectIndex,
-        BSDEntryTable,BSDFile,GameVersion) ) {
+    if( !BSDLoadAnimationFaceData(RenderObject,RenderObjectElement.FaceTableOffset,RenderObjectIndex,
+        BSDEntryTable,BSDFile) ) {
         DPrintf("BSDLoadAnimatedRenderObject:Failed to load face data\n");
         goto Failure;
     }
@@ -1923,7 +1728,7 @@ Failure:
     return NULL;
 }
 BSDRenderObject_t *BSDLoadStaticRenderObject(BSDRenderObjectElement_t RenderObjectElement,BSDEntryTable_t BSDEntryTable,FILE *BSDFile,
-                                               int RenderObjectIndex,int ReferencedRenderObjectIndex
+                                               int RenderObjectIndex
 )
 {
     BSDRenderObject_t *RenderObject;
@@ -1983,33 +1788,15 @@ Failure:
     BSDFreeRenderObject(RenderObject);
     return NULL;
 }
-BSD_t *BSDLoad(FILE *BSDFile,int *GameVersion)
+BSD_t *BSDLoad(FILE *BSDFile)
 {
     BSD_t *BSD;
-    int LocalGameVersion;
-    int RenderObjectSize;
     
     BSD = NULL;
     
     BSD = malloc(sizeof(BSD_t));
-    
-    //if( !BSDReadEntryTableChunk(BSD,BSDFile) ) {
-    //    goto Failure;
-    //}
-    //RenderObjectSize = BSDGetRenderObjectSize(BSD,BSDFile);
-    //assert( RenderObjectSize == MOH_RENDER_OBJECT_SIZE || RenderObjectSize == MOH_UNDERGROUND_RENDER_OBJECT_SIZE );
-    //if( RenderObjectSize == MOH_RENDER_OBJECT_SIZE ) {
-    //    LocalGameVersion = MOH_GAME_STANDARD;
-    //} else {
-    //    LocalGameVersion = MOH_GAME_UNDERGROUND;
-    //}
-    //DPrintf("Running BSD from %s since size is %i\n",LocalGameVersion == MOH_GAME_STANDARD ? 
-    //   "Medal Of Honor" : "Medal Of Honor:Underground",RenderObjectSize);
-    if( !BSDReadRenderObjectChunk(BSD,MOH_GAME_STANDARD,BSDFile) ) {
+    if( !BSDReadRenderObjectChunk(BSD,BSDFile) ) {
         goto Failure;
-    }
-    if( GameVersion ) {
-        *GameVersion = LocalGameVersion;
     }
     return BSD;
 Failure:
@@ -2017,22 +1804,20 @@ Failure:
     return NULL;
 }
 
-BSDRenderObject_t *BSDLoadAllAnimatedRenderObjects(const char *FName,int *GameVersion)
+BSDRenderObject_t *BSDLoadAllRenderObjects(const char *FName)
 {
     FILE *BSDFile;
     BSD_t *BSD;
-    int LocalGameVersion;
     BSDRenderObject_t *RenderObjectList;
     BSDRenderObject_t *RenderObject;
     int i;
-    int ReferencedRenderObjectIndex;
     
     BSDFile = fopen(FName,"rb");
     if( BSDFile == NULL ) {
         DPrintf("Failed opening BSD File %s.\n",FName);
         return NULL;
     }
-    BSD = BSDLoad(BSDFile,&LocalGameVersion);
+    BSD = BSDLoad(BSDFile);
     if( !BSD ) {
         fclose(BSDFile);
         return NULL;
@@ -2047,36 +1832,18 @@ BSDRenderObject_t *BSDLoadAllAnimatedRenderObjects(const char *FName,int *GameVe
         if( strcmp(BSD->RenderObjectTable.RenderObject[i].FileName,"data\\dino\\compy\\compy.bad") ) {
 //             continue;
         }
-        /*
-         * NOTE(Adriano):
-         * RenderObjectIndex is only used by BSDLoadAnimatedRenderObject only when the game is
-         * MOH:Underground and the FaceTableOffset is equals to -1.
-         * We need to use the referenced RenderObject index if it is set otherwise the offset may
-         * not be valid.
-         */
-        ReferencedRenderObjectIndex = -1;
-        if( BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId != -1 ) {
-            //NOTE(Adriano):Some RenderObjects are bundled in other files and referenced by Id.
-            //This could happens for example when loading the SET1 BSD that is looking for another RenderObject containted inside
-            //the level file.
-            //For the moment this is bypassed and could cause the RenderObject to not be loaded due to missing offsets...
-            ReferencedRenderObjectIndex = BSDGetRenderObjectIndexById(BSD,BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId);
-        }
+
         DPrintf("BSDLoadAllAnimatedRenderObjects:Loading Animated RenderObject %s\n",BSD->RenderObjectTable.RenderObject[i].FileName);
         //RenderObject = BSDLoadAnimatedRenderObject(BSD->RenderObjectTable.RenderObject[i],BSD->EntryTable,
         //                                           BSDFile,i,ReferencedRenderObjectIndex,LocalGameVersion);
         RenderObject = BSDLoadStaticRenderObject(BSD->RenderObjectTable.RenderObject[i],BSD->EntryTable,
-                                                   BSDFile,i,ReferencedRenderObjectIndex);
+                                                   BSDFile,i);
         if( !RenderObject ) {
             DPrintf("BSDLoadAllAnimatedRenderObjects:Failed to load animated RenderObject.\n");
             continue;
         }
         BSDAppendRenderObjectToList(&RenderObjectList,RenderObject);
     }
-    if( GameVersion ) {
-        *GameVersion = LocalGameVersion;
-    }
-    
     BSDFree(BSD);
     fclose(BSDFile);
     return RenderObjectList;
