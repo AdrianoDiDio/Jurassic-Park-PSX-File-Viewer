@@ -26,6 +26,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX -Debug)
 set_target_properties(${PROJECT_NAME} PROPERTIES RELEASE_POSTFIX -Release)
 
 target_compile_options(${PROJECT_NAME} PRIVATE "-fdiagnostics-color=always")
+target_compile_options(${PROJECT_NAME} PRIVATE "-Wno-unknown-pragmas")
 if(WIN32)
   target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
   target_compile_definitions(${PROJECT_NAME} PRIVATE "-DSDL_MAIN_HANDLED")

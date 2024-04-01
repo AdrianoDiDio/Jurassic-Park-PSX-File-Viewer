@@ -65,15 +65,6 @@ typedef struct TSPBBox_s {
     TSPVec3_t Max;
 } TSPBBox_t;
 
-typedef struct TSPTextureInfo_s {
-    TSPUv_t UV0;
-    short   CBA;
-    TSPUv_t UV1;
-    short   TSB;
-    TSPUv_t UV2;
-    short   Padding;
-} TSPTextureInfo_t;
-
 typedef struct TSPRenderingFace_s {
     int VAOBufferOffset;
     int BlendingMode;
@@ -99,18 +90,6 @@ typedef struct TSPFace_s {
     TSPUv_t UV2;
 } TSPFace_t;
 
-typedef struct TSPFaceV3_s {
-    short V0V1;
-    unsigned short V2;
-    unsigned short TextureDataIndex;
-    
-    unsigned int Vert0;
-    unsigned int Vert1;
-    unsigned int Vert2;
-    int SwapV1V2;
-    int FileOffset;
-} TSPFaceV3_t;
-
 //36 Bytes.
 typedef struct TSPNodeFileLookUp_s {
     int Offset;
@@ -129,8 +108,7 @@ typedef struct TSPNode_s {
     int U6;
     
     TSPNodeFileLookUp_t FileOffset;
-    TSPFaceV3_t *FaceList;
-    TSPFace_t *FaceList2;
+    TSPFace_t *FaceList;
     VAO_t *BBoxVAO;
     VAO_t *OpaqueFacesVAO;
     VAO_t *LeafCollisionFaceListVAO;
@@ -234,11 +212,6 @@ typedef struct TSPHeader_s {
     
     int NumDynamicDataBlock;
     int DynamicDataOffset;
-    
-    int CollisionOffset;
-    
-    int NumTextureInfo;
-    int TextureInfoOffset;
 } TSPHeader_t;
 
 
@@ -251,7 +224,6 @@ typedef struct TSP_s {
     TSPVert_t   *Vertex;
     Color1i_t     *Color;
     TSPDynamicData_t  *DynamicData;
-    TSPTextureInfo_t *TextureData;
     TSPCollision_t *CollisionData;
     //
     int          Number;
@@ -259,6 +231,7 @@ typedef struct TSP_s {
     VAO_t       *TransparentVAO;
     TSPRenderingFace_t *TransparentFaceList;
     VAO_t       *CollisionVAOList;
+    bool        VAOCreated;
     struct TSP_s *Next;
 } TSP_t;
 
@@ -272,7 +245,6 @@ void    TSPUpdateAnimatedFaces(TSP_t *TSPList,BSD_t *BSD,Camera_t *Camera,mat4 P
 void    TSPUpdateDynamicFaces(TSP_t *TSPList,Camera_t *Camera,int DynamicDataIndex);
 void    TSPCreateVAOs(TSP_t *TSPList);
 int     TSPGetPointYComponentFromKDTree(vec3 Point,TSP_t *TSPList,int *PropertySetFileIndex,int *OutY);
-bool    TSPIsVersion3(TSP_t *TSP);
 void    TSPDumpDataToObjFile(TSP_t *TSPList,VRAM_t *VRAM,FILE* OutFile);
 void    TSPDumpDataToPlyFile(TSP_t *TSPList,VRAM_t *VRAM,FILE* OutFile);
 void    TSPFree(TSP_t *TSP);

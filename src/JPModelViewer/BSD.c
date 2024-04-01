@@ -803,17 +803,14 @@ void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,const VRAM_t *VRAM,Came
     mat4 ModelViewMatrix;
     mat4 MVPMatrix;
     Shader_t *Shader;
-    static int Once = 0;
     
     if( !RenderObject ) {
         return;
     }
     
     if( RenderObject->TSP ) {
-        if( !Once ) {
+        if( !RenderObject->RenderObjectShader ) {
             BSDCreateRenderObjectShader(RenderObject);
-            TSPCreateVAOs(RenderObject->TSP);
-            Once = 1;
         }
         TSPDrawList(RenderObject->TSP,VRAM,Camera,RenderObject->RenderObjectShader,ProjectionMatrix);
         return;

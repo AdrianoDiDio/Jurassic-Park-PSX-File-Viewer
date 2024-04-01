@@ -45,7 +45,6 @@ set(IMGUI_SOURCE_FILES cimgui/cimgui.cpp
 
 add_library(cimgui STATIC ${IMGUI_SOURCE_FILES})
 target_compile_definitions(cimgui PRIVATE "IMGUI_USER_CONFIG=\"${PROJECT_SOURCE_DIR}/src/Common/IMGUIConfig.h\"")
-
 target_include_directories(cimgui PRIVATE cimgui/imgui)
 target_link_libraries(cimgui SDL2)
 
