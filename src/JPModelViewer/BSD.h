@@ -222,16 +222,45 @@ typedef struct BSDEntryTable_s {
     
 } BSDEntryTable_t;
 
+typedef struct BSDFaceGT3Packet_s
+{
+	unsigned int Tag;
+	Byte	r0, g0, b0, code;
+	short	x0, 	y0;
+	BSDUv_t	UV0;	unsigned short	CBA;
+	Byte	r1, g1, b1, p1;
+	short	x1,	y1;
+	BSDUv_t	UV1;	unsigned short	TexInfo;
+	Byte	r2, g2, b2, p2;
+	short	x2,	y2;
+	BSDUv_t	UV2;	unsigned short	pad2;
+} BSDFaceGT3Packet_t;
+
+typedef struct BSDFaceG3Packet_s {
+	unsigned int Tag;
+	Byte	r0, g0, b0, code;
+	short	x0, 	y0;
+	Byte	r1, g1, b1, p1;
+	short	x1,	y1;
+	Byte	r2, g2, b2, p2;
+	short	x2,	y2;
+} BSDFaceG3Packet_t;
+
 typedef struct BSDFace_s {
-    char            U0[8];
-    BSDUv2_t        UV0; // 12
-    char            U1[8];
-    BSDUv2_t        UV1; // 24
-    short           CBA;
+    BSDUv_t        UV0; // 12
+    BSDUv_t        UV1; // 24
+    char            U0[4];
+    BSDUv_t         UV2; // 38
+    char            Pad[46];
+    
     short           TexInfo;
-    char            U2[6]; // 34
-    BSDUv2_t         UV2; // 38
-    char            Pad[18]; // 56
+    short           CBA;
+    
+    BSDFaceG3Packet_t  FacePacketsUntextured[2];
+    BSDFaceGT3Packet_t FacePackets[2];
+    
+    bool IsTextured;
+
     
     unsigned int    Vert0;
     unsigned int    Vert1;
