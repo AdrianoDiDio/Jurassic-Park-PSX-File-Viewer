@@ -154,11 +154,13 @@ typedef struct BSDRenderObjectElement_s {
     int             UnknownOffset0;
     int             AnimationDataOffset;
     int             TSPOffset; //16
-    char            U0[20];
-    int             AltFaceOffset; // 36
-    char            U5[4];
-    int             FaceOffset;// 40
-    int             FaceOffset2; // 44
+    char            U0[12]; // 32
+    int             AltAltFaceOffset; // 32
+    int             AltUntexturedFaceOffset; //36
+    int             AltFaceOffset; // 40
+    char            AltTexturedFaceOffset; // 44
+    int             UntexturedFaceOffset;// 48
+    int             TexturedFaceOffset; // 52
     char            U[4];
     int             FaceTableOffset;
     int             UnknownOffset4;
@@ -247,24 +249,21 @@ typedef struct BSDFaceG3Packet_s {
 } BSDFaceG3Packet_t;
 
 typedef struct BSDFace_s {
-    BSDUv_t        UV0; // 12
-    BSDUv_t        UV1; // 24
-    char            U0[4];
-    BSDUv_t         UV2; // 38
-    char            Pad[46];
-    
-    short           TexInfo;
-    short           CBA;
-    
-    BSDFaceG3Packet_t  FacePacketsUntextured[2];
-    BSDFaceGT3Packet_t FacePackets[2];
-    
-    bool IsTextured;
+    BSDUv_t        UV0;
+    BSDUv_t        UV1;
+    BSDUv_t        UV2;
+    BSDColor_t     RGB0;
+    BSDColor_t     RGB1;
+    BSDColor_t     RGB2;    
+    short          TexInfo;
+    short          CBA;
 
     
     unsigned int    Vert0;
     unsigned int    Vert1;
     unsigned int    Vert2;
+    bool            IsTextured;
+
 } BSDFace_t;
 
 typedef struct TSP_s TSP_t;
@@ -288,8 +287,10 @@ typedef struct BSDRenderObject_s {
     BSDVertex_t                 *Vertex;
     int                         NumVertex;
     Color1i_t                   *Color;
-    BSDFace_t                   *Face;
-    int                         NumStaticFaces;
+    BSDFace_t                   *TexturedFaceList;
+    BSDFace_t                   *UntexturedFaceList;
+    int                         NumTexturedFaces;
+    int                         NumUntexturedFaces;
     vec3                        Scale;
     vec3                        Center;
     VAO_t                       *VAO;

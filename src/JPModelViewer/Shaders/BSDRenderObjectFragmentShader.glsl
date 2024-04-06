@@ -27,24 +27,28 @@ void main()
     uint CLUTX;
     uint CLUTY;
 
-    //NOTE(Adriano):16-bpp mode textures are encoded directly into CLUT.
-    if( ourColorMode == 2 ) {
-        CLUTTexel = texelFetch(ourPaletteTexture, ivec2(TexCoord), 0);
-    } else {
-        TexColor = texelFetch(ourIndexTexture, ivec2(TexCoord), 0);
-        CLUTIndex = TexColor.r;
-        CLUTX = uint(CLUTCoord.x) + CLUTIndex;
-        CLUTY = uint(CLUTCoord.y);
-        CLUTTexel = texelFetch(ourPaletteTexture, ivec2(CLUTX,CLUTY), 0);
-    }
-    if( InternalToPsxColor(CLUTTexel) == 0x0000u) {
-        discard;
-    }
+    if( ourColorMode != 50 ) {
+        //NOTE(Adriano):16-bpp mode textures are encoded directly into CLUT.
+        if( ourColorMode == 2 ) {
+            CLUTTexel = texelFetch(ourPaletteTexture, ivec2(TexCoord), 0);
+        } else {
+            TexColor = texelFetch(ourIndexTexture, ivec2(TexCoord), 0);
+            CLUTIndex = TexColor.r;
+            CLUTX = uint(CLUTCoord.x) + CLUTIndex;
+            CLUTY = uint(CLUTCoord.y);
+            CLUTTexel = texelFetch(ourPaletteTexture, ivec2(CLUTX,CLUTY), 0);
+        }
+        if( InternalToPsxColor(CLUTTexel) == 0x0000u) {
+            discard;
+        }
 
-    if( LightingEnabled > 0.5 ) {
-        CLUTTexel.r = clamp(CLUTTexel.r * ourColor.r * 2.f, 0.f, 1.f);
-        CLUTTexel.g = clamp(CLUTTexel.g * ourColor.g * 2.f, 0.f, 1.f);
-        CLUTTexel.b = clamp(CLUTTexel.b * ourColor.b * 2.f, 0.f, 1.f);
+        if( LightingEnabled > 0.5 ) {
+            CLUTTexel.r = clamp(CLUTTexel.r * ourColor.r * 2.f, 0.f, 1.f);
+            CLUTTexel.g = clamp(CLUTTexel.g * ourColor.g * 2.f, 0.f, 1.f);
+            CLUTTexel.b = clamp(CLUTTexel.b * ourColor.b * 2.f, 0.f, 1.f);
+        }
+    } else {
+        CLUTTexel = vec4(ourColor.rgb,1);
     }
     FragColor = CLUTTexel;
 }
