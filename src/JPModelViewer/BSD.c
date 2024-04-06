@@ -958,7 +958,7 @@ void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *
     Temp[1] = 1;
     Temp[2] = 0;
     glm_rotate(ModelMatrix,glm_rad(-90), Temp);
-    glm_scale(ModelMatrix,RenderObject->Scale);
+//     glm_scale(ModelMatrix,RenderObject->Scale);
     glm_mat4_mul(Camera->ViewMatrix,ModelMatrix,ModelViewMatrix);
     glm_mat4_mul(ProjectionMatrix,ModelViewMatrix,MVPMatrix);
     //Emulate PSX Coordinate system...
@@ -1162,12 +1162,12 @@ int BSDReadRenderObjectChunk(BSD_t *BSD,FILE *BSDFile)
         fread(&BSD->RenderObjectTable.RenderObject[i],sizeof(BSD->RenderObjectTable.RenderObject[i]),1,BSDFile);
         DPrintf("RenderObject Id:%i\n",BSD->RenderObjectTable.RenderObject[i].Id);
         DPrintf("RenderObject File:%s\n",BSD->RenderObjectTable.RenderObject[i].FileName);
-        DPrintf("RenderObject Type:%i\n",BSD->RenderObjectTable.RenderObject[i].Type);
-        if( BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId != -1 ) {
-            DPrintf("RenderObject References RenderObject Id:%i\n",BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId);
-        } else {
-            DPrintf("RenderObject No Reference set...\n");
-        }
+//         DPrintf("RenderObject Type:%i\n",BSD->RenderObjectTable.RenderObject[i].Type);
+//         if( BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId != -1 ) {
+//             DPrintf("RenderObject References RenderObject Id:%i\n",BSD->RenderObjectTable.RenderObject[i].ReferencedRenderObjectId);
+//         } else {
+//             DPrintf("RenderObject No Reference set...\n");
+//         }
         DPrintf("RenderObject Element TSP Offset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].TSPOffset,
                 BSD->RenderObjectTable.RenderObject[i].TSPOffset + BSD_HEADER_SIZE);
         DPrintf("RenderObject Element Animation Offset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].AnimationDataOffset,
@@ -1177,13 +1177,6 @@ int BSDReadRenderObjectChunk(BSD_t *BSD,FILE *BSDFile)
         DPrintf("RenderObject Element Vertex Offset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].VertexOffset,
                 BSD->RenderObjectTable.RenderObject[i].VertexOffset + BSD_HEADER_SIZE);
         DPrintf("RenderObject Element NumVertex: %i\n",BSD->RenderObjectTable.RenderObject[i].NumVertex);
-        //These offsets are relative to the EntryTable.
-        DPrintf("RenderObject FaceTableOffset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].FaceTableOffset,
-                BSD->RenderObjectTable.RenderObject[i].FaceTableOffset + BSD_HEADER_SIZE);
-        DPrintf("RenderObject VertexTableIndexOffset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].VertexTableIndexOffset,
-                BSD->RenderObjectTable.RenderObject[i].VertexTableIndexOffset + BSD_HEADER_SIZE);
-        DPrintf("RenderObject Hierarchy Data Root Offset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].HierarchyDataRootOffset,
-                BSD->RenderObjectTable.RenderObject[i].HierarchyDataRootOffset + BSD_HEADER_SIZE);
         DPrintf("RenderObject AltAltFaceOffset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].AltAltFaceOffset,
                 BSD->RenderObjectTable.RenderObject[i].AltAltFaceOffset + BSD_HEADER_SIZE);
         DPrintf("RenderObject AltUntexturedFaceOffset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].AltUntexturedFaceOffset,
@@ -1197,9 +1190,9 @@ int BSDReadRenderObjectChunk(BSD_t *BSD,FILE *BSDFile)
         DPrintf("RenderObject TexturedFaceOffset: %i (%i)\n",BSD->RenderObjectTable.RenderObject[i].TexturedFaceOffset,
                 BSD->RenderObjectTable.RenderObject[i].TexturedFaceOffset + BSD_HEADER_SIZE);
         DPrintf("RenderObject Scale: %i;%i;%i (4096 is 1 meaning no scale)\n",
-                BSD->RenderObjectTable.RenderObject[i].ScaleX / 4,
-                BSD->RenderObjectTable.RenderObject[i].ScaleY / 4,
-                BSD->RenderObjectTable.RenderObject[i].ScaleZ / 4);
+                 BSD->RenderObjectTable.RenderObject[i].ScaleX / 4,
+                 BSD->RenderObjectTable.RenderObject[i].ScaleY / 4,
+                 BSD->RenderObjectTable.RenderObject[i].ScaleZ / 4);
  
     }
     return 1;
@@ -1676,27 +1669,6 @@ int BSDParseRenderObjectVertexAndColorData(BSDRenderObject_t *RenderObject,BSDRe
             );
         }
     }
-    if( RenderObjectElement->ColorOffset != 0 ) {
-        Size = RenderObjectElement->NumVertex * sizeof(Color1i_t);
-        RenderObject->Color = malloc(Size);
-        if( !RenderObject->Color ) {
-            DPrintf("BSDParseRenderObjectVertexData:Failed to allocate memory for ColorData\n");
-            return 0;
-        } 
-        memset(RenderObject->Color,0,Size);
-        fseek(BSDFile,RenderObjectElement->ColorOffset + 2048,SEEK_SET);
-        DPrintf("Reading Color definition at %i (Current:%i)\n",
-                RenderObjectElement->ColorOffset + 2048,GetCurrentFilePosition(BSDFile)); 
-        for( i = 0; i < RenderObjectElement->NumVertex; i++ ) {
-            DPrintf("Reading Color at %i (%i)\n",GetCurrentFilePosition(BSDFile),GetCurrentFilePosition(BSDFile) - 2048);
-            fread(&RenderObject->Color[i],sizeof(Color1i_t),1,BSDFile);
-            DPrintf("Color %i => %i;%i;%i;%i\n",RenderObject->Color[i].c,
-                    RenderObject->Color[i].rgba[0],RenderObject->Color[i].rgba[1],
-                    RenderObject->Color[i].rgba[2],
-                    RenderObject->Color[i].rgba[3]
-            );
-        }
-    }
     return 1;
 }
 void DecodeVertexData(int EncodedVertex,unsigned int *OutVertexIndex1,unsigned int *OutVertexIndex2,unsigned int *OutVertexIndex3)
@@ -1731,6 +1703,27 @@ void BSDFaceGT3PacketToBSDFace(BSDFace_t *Face,BSDFaceGT3Packet_t Packet)
         Face->RGB2.g = Packet.g2;
         Face->RGB2.b = Packet.b2;
 }
+void BSDFaceFT3PacketToBSDFace(BSDFace_t *Face,BSDFaceFT3Packet_t Packet)
+{
+        Face->TexInfo = Packet.TexInfo;
+        Face->CBA = Packet.CBA;
+        Face->UV0 = Packet.UV0;
+        Face->UV1 = Packet.UV1;
+        Face->UV2 = Packet.UV2;
+        
+        Face->RGB0.r = Packet.r0;
+        Face->RGB0.g = Packet.b0;
+        Face->RGB0.b = Packet.g0;
+        
+        Face->RGB1.r = Packet.r0;
+        Face->RGB1.g = Packet.g0;
+        Face->RGB1.b = Packet.b0;
+        
+        Face->RGB2.r = Packet.r0;
+        Face->RGB2.g = Packet.g0;
+        Face->RGB2.b = Packet.b0;
+}
+
 void BSDFaceG3PacketToBSDFace(BSDFace_t *Face,BSDFaceG3Packet_t Packet)
 {        
         Face->RGB0.r = Packet.r0;
@@ -1745,7 +1738,13 @@ void BSDFaceG3PacketToBSDFace(BSDFace_t *Face,BSDFaceG3Packet_t Packet)
         Face->RGB2.g = Packet.g2;
         Face->RGB2.b = Packet.b2;
 }
-int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRenderObjectElement_t *RenderObjectElement,FILE *BSDFile)
+/*
+ * Parse the Textured face data at the given offset, UseFTPacket can be enabled to parse faces that do not requires a different color per vertex
+ * Every time this function gets called the TexturedFaceList array gets created if NULL or expanded if not and NumTexturedFaces will reflect
+ * the actual number of faces loaded (depending how many times this function was called).
+*/
+int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRenderObjectElement_t *RenderObjectElement,FILE *BSDFile,int Offset,
+                                         bool UseFTPacket)
 {
     unsigned int   Vert0;
     unsigned int   Vert1;
@@ -1753,32 +1752,47 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
     unsigned int   PackedVertexData;
     int            FaceListSize;
     int            i;
+    int            NumTexturedFaces;
     BSDFaceGT3Packet_t FaceData[2];
+    BSDFaceFT3Packet_t FlatFaceData[2];
+
     if( !RenderObject ) {
         DPrintf("BSDParseRenderObjectTexturedFaceData:Invalid RenderObject!\n");
         return 0;
     }
     
-    if( !RenderObjectElement->TexturedFaceOffset ) {
+    if( !Offset ) {
         DPrintf("BSDParseRenderObjectTexturedFaceData:Invalid TexturedFaceOffset for RenderObject %i!\n",RenderObjectElement->Id);
         return 0;
     }
-    fseek(BSDFile,RenderObjectElement->TexturedFaceOffset + 2048,SEEK_SET);
-    fread(&RenderObject->NumTexturedFaces,sizeof(int),1,BSDFile);
+    fseek(BSDFile,Offset + 2048,SEEK_SET);
+    fread(&NumTexturedFaces,sizeof(int),1,BSDFile);
+    RenderObject->NumTexturedFaces += NumTexturedFaces;
     DPrintf("BSDParseRenderObjectTexturedFaceData:Reading %i faces\n",RenderObject->NumTexturedFaces);
     FaceListSize = RenderObject->NumTexturedFaces * sizeof(BSDFace_t);
-    RenderObject->TexturedFaceList = malloc(FaceListSize);
+    if( !RenderObject->TexturedFaceList ) {
+        RenderObject->TexturedFaceList = malloc(FaceListSize);
+    } else {
+        RenderObject->TexturedFaceList = realloc(RenderObject->TexturedFaceList,FaceListSize);
+    }
+    
     if( !RenderObject->TexturedFaceList ) {
         DPrintf("BSDParseRenderObjectTexturedFaceData:Failed to allocate memory for face array\n");
         return 0;
     }
     memset(RenderObject->TexturedFaceList,0,FaceListSize);
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
-    for( i = 0; i < RenderObject->NumTexturedFaces; i++ ) {
+    for( i = 0; i < NumTexturedFaces; i++ ) {
         DPrintf("BSDParseRenderObjectTexturedFaceData:Reading Face at %i (%i)\n",GetCurrentFilePosition(BSDFile),GetCurrentFilePosition(BSDFile) - 2048);
-        DPrintf(" -- FACE %i --\n",i);     
-        fread(&FaceData,sizeof(FaceData),1,BSDFile);
-        BSDFaceGT3PacketToBSDFace(&RenderObject->TexturedFaceList[i],FaceData[0]);
+        DPrintf(" -- FACE %i --\n",i);
+        if( UseFTPacket ) {
+            DPrintf("Using FT packet (size %li)\n",sizeof(BSDFaceFT3Packet_t));
+            fread(&FlatFaceData,sizeof(FlatFaceData),1,BSDFile);
+            BSDFaceFT3PacketToBSDFace(&RenderObject->TexturedFaceList[i],FlatFaceData[0]);
+        } else {
+            fread(&FaceData,sizeof(FaceData),1,BSDFile);
+            BSDFaceGT3PacketToBSDFace(&RenderObject->TexturedFaceList[i],FaceData[0]);
+        }
         DPrintf("Tex info %i | Color mode %i | Texture Page %i\n",RenderObject->TexturedFaceList[i].TexInfo,
                 (RenderObject->TexturedFaceList[i].TexInfo & 0xC0) >> 7,RenderObject->TexturedFaceList[i].TexInfo & 0x1f);
         DPrintf("CBA is %i %ix%i\n",RenderObject->TexturedFaceList[i].CBA,
@@ -1804,7 +1818,12 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
     }
     return 1;
 }
-int BSDParseRenderObjectUnTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRenderObjectElement_t *RenderObjectElement,FILE *BSDFile)
+/*
+ * Parse the Non-Textured face data at the given offset.
+ * Every time this function gets called the UntexturedFaceList array gets created if NULL or expanded if not and NumUntexturedFaces will reflect
+ * the actual number of faces loaded (depending how many times this function was called).
+*/
+int BSDParseRenderObjectUntexturedFaceData(BSDRenderObject_t *RenderObject,BSDRenderObjectElement_t *RenderObjectElement,FILE *BSDFile,int Offset)
 {
     unsigned int   Vert0;
     unsigned int   Vert1;
@@ -1812,34 +1831,40 @@ int BSDParseRenderObjectUnTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRe
     unsigned int   PackedVertexData;
     int            FaceListSize;
     int            i;
+    int            NumUntexturedFaces;
     BSDFaceG3Packet_t FaceData[2];
     if( !RenderObject ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Invalid RenderObject!\n");
         return 0;
     }
     
-    if( !RenderObjectElement->UntexturedFaceOffset ) {
-        DPrintf("BSDParseRenderObjectUnTexturedFaceData:Invalid UntexturedFaceOffset for RenderObject %i!\n",RenderObjectElement->Id);
+    if( !Offset ) {
+        DPrintf("BSDParseRenderObjectUnTexturedFaceData:Invalid Offset for RenderObject %i!\n",RenderObjectElement->Id);
         return 0;
     }
-    fseek(BSDFile,RenderObjectElement->UntexturedFaceOffset + 2048,SEEK_SET);
-    fread(&RenderObject->NumUntexturedFaces,sizeof(int),1,BSDFile);
-    DPrintf("BSDParseRenderObjectFaceData:Reading %i faces\n",RenderObject->NumUntexturedFaces);
+    fseek(BSDFile,Offset + 2048,SEEK_SET);
+    fread(&NumUntexturedFaces,sizeof(int),1,BSDFile);
+    DPrintf("BSDParseRenderObjectFaceData:Reading %i faces\n",NumUntexturedFaces);
+    RenderObject->NumUntexturedFaces += NumUntexturedFaces;
     FaceListSize = RenderObject->NumUntexturedFaces * sizeof(BSDFace_t);
-    RenderObject->UntexturedFaceList = malloc(FaceListSize);
+    if( !RenderObject->UntexturedFaceList ) {
+        RenderObject->UntexturedFaceList = malloc(FaceListSize);
+    } else {
+        RenderObject->UntexturedFaceList = realloc(RenderObject->UntexturedFaceList,FaceListSize);
+    }
     if( !RenderObject->UntexturedFaceList ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Failed to allocate memory for face array\n");
         return 0;
     }
     memset(RenderObject->UntexturedFaceList,0,FaceListSize);
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
-    for( i = 0; i < RenderObject->NumUntexturedFaces; i++ ) {
+    for( i = 0; i < NumUntexturedFaces; i++ ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Reading Face at %i (%i)\n",GetCurrentFilePosition(BSDFile),GetCurrentFilePosition(BSDFile) - 2048);
         DPrintf(" -- FACE %i --\n",i);
         DPrintf("Reading a packet of size %li\n",sizeof(FaceData));
         fread(&FaceData,sizeof(FaceData),1,BSDFile);
         BSDFaceG3PacketToBSDFace(&RenderObject->UntexturedFaceList[i],FaceData[0]);
-        DPrintf("Reading vertex data at %i (%li)\n",GetCurrentFilePosition(BSDFile) - FirstFaceDef,GetCurrentFilePosition(BSDFile) - 2048);
+        DPrintf("Reading vertex data at %i (%i)\n",GetCurrentFilePosition(BSDFile) - FirstFaceDef,GetCurrentFilePosition(BSDFile) - 2048);
         fread(&PackedVertexData,sizeof(PackedVertexData),1,BSDFile);
         DPrintf("Packed Vertex data is %u\n",PackedVertexData);
         DecodeVertexData(PackedVertexData, &Vert0, &Vert1, &Vert2);        
@@ -1863,79 +1888,39 @@ int BSDParseRenderObjectFaceData(BSDRenderObject_t *RenderObject,BSDRenderObject
     }
     RenderObject->NumTexturedFaces = 0;
     RenderObject->NumUntexturedFaces = 0;
-    
     if( RenderObjectElement->TexturedFaceOffset ) {
-        if( !BSDParseRenderObjectTexturedFaceData(RenderObject,RenderObjectElement,BSDFile) ) {
+        if( !BSDParseRenderObjectTexturedFaceData(RenderObject,RenderObjectElement,BSDFile,RenderObjectElement->TexturedFaceOffset,0) ) {
+            DPrintf("BSDParseRenderObjectFaceData:Failed to load textured face data for RenderObject %i\n",RenderObjectElement->Id);
+            return 0;
+        }
+    }
+    if( RenderObjectElement->AltTexturedFaceOffset ) {
+        if( !BSDParseRenderObjectTexturedFaceData(RenderObject,RenderObjectElement,BSDFile,RenderObjectElement->AltTexturedFaceOffset,1) ) {
+            DPrintf("BSDParseRenderObjectFaceData:Failed to load textured face data for RenderObject %i\n",RenderObjectElement->Id);
+            return 0;
+        }
+    }
+    if( RenderObjectElement->AltFaceOffset ) {
+        if( !BSDParseRenderObjectTexturedFaceData(RenderObject,RenderObjectElement,BSDFile,RenderObjectElement->AltFaceOffset,0) ) {
             DPrintf("BSDParseRenderObjectFaceData:Failed to load textured face data for RenderObject %i\n",RenderObjectElement->Id);
             return 0;
         }
     }
     if( RenderObjectElement->UntexturedFaceOffset ) {
-        if( !BSDParseRenderObjectUnTexturedFaceData(RenderObject,RenderObjectElement,BSDFile) ) {
+        if( !BSDParseRenderObjectUntexturedFaceData(RenderObject,RenderObjectElement,BSDFile,RenderObjectElement->UntexturedFaceOffset) ) {
+            DPrintf("BSDParseRenderObjectFaceData:Failed to load untextured face data for RenderObject %i\n",RenderObjectElement->Id);
+            return 0;
+        }
+    }
+    if( RenderObjectElement->AltUntexturedFaceOffset ) {
+        if( !BSDParseRenderObjectUntexturedFaceData(RenderObject,RenderObjectElement,BSDFile,RenderObjectElement->AltUntexturedFaceOffset) ) {
             DPrintf("BSDParseRenderObjectFaceData:Failed to load untextured face data for RenderObject %i\n",RenderObjectElement->Id);
             return 0;
         }
     }
     return 1;
 }
-BSDRenderObject_t *BSDLoadAnimatedRenderObject(BSDRenderObjectElement_t RenderObjectElement,BSDEntryTable_t BSDEntryTable,FILE *BSDFile,
-                                               int RenderObjectIndex)
-{
-    BSDRenderObject_t *RenderObject;
-    
-    RenderObject = NULL;
-    if( !BSDFile ) {
-        DPrintf("BSDLoadAnimatedRenderObject:Invalid BSD file\n");
-        goto Failure;
-    }
-    RenderObject = malloc(sizeof(BSDRenderObject_t));
-    if( !RenderObject ) {
-        DPrintf("BSDLoadAnimatedRenderObject:Failed to allocate memory for RenderObject\n");
-        goto Failure;
-    }
-    RenderObject->Id = RenderObjectElement.Id;
-    RenderObject->ReferencedRenderObjectId = RenderObjectElement.ReferencedRenderObjectId;
-    RenderObject->Type = RenderObjectElement.Type;
-    RenderObject->VertexTable = NULL;
-    RenderObject->CurrentVertexTable = NULL;
-    RenderObject->FaceList = NULL;
-    RenderObject->HierarchyDataRoot = NULL;
-    RenderObject->AnimationList = NULL;
-    RenderObject->VAO = NULL;
-    RenderObject->CurrentAnimationIndex = -1;
-    RenderObject->CurrentFrameIndex = -1;
-    RenderObject->Next = NULL;
 
-    RenderObject->Scale[0] = (float) (RenderObjectElement.ScaleX  / 16 ) / 4096.f;
-    RenderObject->Scale[1] = (float) (RenderObjectElement.ScaleY  / 16 ) / 4096.f;
-    RenderObject->Scale[2] = (float) (RenderObjectElement.ScaleZ  / 16 ) / 4096.f;
-
-    glm_vec3_zero(RenderObject->Center);
-
-    if( !BSDLoadAnimationVertexData(RenderObject,RenderObjectElement.VertexTableIndexOffset,BSDEntryTable,BSDFile) ) {
-        DPrintf("BSDLoadAnimatedRenderObject:Failed to load vertex data\n");
-        goto Failure;
-    }
-
-    if( !BSDLoadAnimationFaceData(RenderObject,RenderObjectElement.FaceTableOffset,RenderObjectIndex,
-        BSDEntryTable,BSDFile) ) {
-        DPrintf("BSDLoadAnimatedRenderObject:Failed to load face data\n");
-        goto Failure;
-    }
-
-    if( !BSDLoadAnimationHierarchyData(RenderObject,RenderObjectElement.HierarchyDataRootOffset,BSDEntryTable,BSDFile) ) {
-        DPrintf("BSDLoadAnimatedRenderObject:Failed to load hierarchy data\n");
-        goto Failure;
-    }
-    if( !BSDLoadAnimationData(RenderObject,RenderObjectElement.AnimationDataOffset,BSDEntryTable,BSDFile) ) {
-        DPrintf("BSDLoadAnimatedRenderObject:Failed to load animation data\n");
-        goto Failure;
-    }
-    return RenderObject;
-Failure:
-    BSDFreeRenderObject(RenderObject);
-    return NULL;
-}
 BSDRenderObject_t *BSDLoadStaticRenderObject(BSDRenderObjectElement_t RenderObjectElement,BSDEntryTable_t BSDEntryTable,FILE *BSDFile,
                                                int RenderObjectIndex
 )
@@ -1953,9 +1938,9 @@ BSDRenderObject_t *BSDLoadStaticRenderObject(BSDRenderObjectElement_t RenderObje
         goto Failure;
     }
     RenderObject->Id = RenderObjectElement.Id;
-    RenderObject->ReferencedRenderObjectId = RenderObjectElement.ReferencedRenderObjectId;
+    RenderObject->ReferencedRenderObjectId = /*RenderObjectElement.ReferencedRenderObjectId*/0;
     RenderObject->FileName = StringCopy(RenderObjectElement.FileName);
-    RenderObject->Type = RenderObjectElement.Type;
+    RenderObject->Type = /*RenderObjectElement.Type*/0;
     RenderObject->NumVertex = RenderObjectElement.NumVertex;
     RenderObject->VertexTable = NULL;
     RenderObject->CurrentVertexTable = NULL;
@@ -1973,9 +1958,9 @@ BSDRenderObject_t *BSDLoadStaticRenderObject(BSDRenderObjectElement_t RenderObje
     RenderObject->TSP = NULL;
     RenderObject->RenderObjectShader = NULL;
 
-    RenderObject->Scale[0] = (float) (RenderObjectElement.ScaleX  / 16 ) / 4096.f;
-    RenderObject->Scale[1] = (float) (RenderObjectElement.ScaleY  / 16 ) / 4096.f;
-    RenderObject->Scale[2] = (float) (RenderObjectElement.ScaleZ  / 16 ) / 4096.f;
+    RenderObject->Scale[0] = (float) (RenderObjectElement.ScaleX  / 16) / 4096.f;
+    RenderObject->Scale[1] = (float) (RenderObjectElement.ScaleY  / 16) / 4096.f;
+    RenderObject->Scale[2] = (float) (RenderObjectElement.ScaleZ  / 16) / 4096.f;
 
     glm_vec3_zero(RenderObject->Center);
     
@@ -1987,7 +1972,7 @@ BSDRenderObject_t *BSDLoadStaticRenderObject(BSDRenderObjectElement_t RenderObje
             DPrintf("BSDParseRenderObjectData:Failed to parse Vertex and Color data for RenderObject %u\n",RenderObject->Id);
             goto Failure;
         }
-        
+        DPrintf("Loading faces definition for Id:%u\n",RenderObjectElement.Id);
         if( !BSDParseRenderObjectFaceData(RenderObject,&RenderObjectElement,BSDFile) ) {
             DPrintf("BSDParseRenderObjectData:Failed to parse Face data for RenderObject %u\n",RenderObject->Id);
             goto Failure;

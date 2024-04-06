@@ -153,35 +153,21 @@ typedef struct BSDRenderObjectElement_s {
     int             UnknownOffset0; // 4
     int             AnimationDataOffset; // 8
     int             TSPOffset; //12
-    char            U0[12]; // 32
-    int             AltAltFaceOffset; // 36
-    int             AltUntexturedFaceOffset; //40
-    int             AltFaceOffset; // 44
-    int             AltTexturedFaceOffset; // 48
-    int             UntexturedFaceOffset;// 52
-    int             TexturedFaceOffset; // 56
-    char            U[4];
-    int             FaceTableOffset;
-    int             UnknownOffset4;
-    char            Pad[58];
+    char            U0[16]; // 32
+    int             AltAltFaceOffset; 
+    int             AltTexturedFaceOffset; 
+    int             AltFaceOffset; 
+    int             AltUntexturedFaceOffset; 
+    int             TexturedFaceOffset; 
+    int             UntexturedFaceOffset;
+    char            Pad[68];
     int             VertexOffset; // 124
     unsigned short  NumVertex; // 128
-    int             VertexOffsetOld; // 132
-    int             VertexTableIndexOffset; // 136
-    unsigned short  UnknownSize; // 140
-    char            RemainingU[14];
-    int             HierarchyDataRootOffset;
-    int             Unknown;
+    char            Pad2[30];
     int             ScaleX;
     int             ScaleY;
     int             ScaleZ;
-    char            Pad2[20];
-    int             ColorOffset;
-    char            LastU[32];
-    int             ReferencedRenderObjectId;
-    char            Pad3[16];
-    int             Type;
-    char            Pad4[1736];
+    char            Pad3[1820];
     char            FileName[132];
 } BSDRenderObjectElement_t;
 
@@ -246,6 +232,18 @@ typedef struct BSDFaceG3Packet_s {
 	Byte	r2, g2, b2, p2;
 	short	x2,	y2;
 } BSDFaceG3Packet_t;
+
+typedef struct BSDFaceFT3Packet_s
+{
+	unsigned int Tag;
+	Byte	r0, g0, b0, code;
+	short	x0, 	y0;
+	BSDUv_t	UV0;	unsigned short	CBA;
+	short	x1,	y1;
+	BSDUv_t UV1;	unsigned short	TexInfo;
+	short	x2,	y2;
+	BSDUv_t UV2;	unsigned short	pad1;
+} BSDFaceFT3Packet_t;	
 
 typedef struct BSDFace_s {
     BSDUv_t        UV0;
