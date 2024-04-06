@@ -24,9 +24,6 @@
 void ApplicationCheckEvents(Application_t *Application)
 {
     SDL_Event Event;
-    BSDRenderObject_t *CurrentRenderObject;
-    int NextFrame;
-    int NextPose;
     
     while( SDL_PollEvent(&Event) ) {
         if( Event.type == SDL_WINDOWEVENT && Event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
@@ -35,24 +32,6 @@ void ApplicationCheckEvents(Application_t *Application)
         }
         if( Event.type == SDL_QUIT || (Event.type == SDL_KEYDOWN && Event.key.keysym.sym == SDLK_ESCAPE ) ) {
             Quit(Application);
-        }
-        if( Event.type == SDL_KEYDOWN && Event.key.keysym.sym == SDLK_m ) {
-            CurrentRenderObject = RenderObjectManagerGetSelectedRenderObject(Application->RenderObjectManager);
-            if( CurrentRenderObject != NULL ) {
-                NextFrame = (CurrentRenderObject->CurrentFrameIndex + 1) % 
-                    CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].NumFrames;
-                BSDRenderObjectSetAnimationPose(CurrentRenderObject,CurrentRenderObject->CurrentAnimationIndex,NextFrame,0);
-            }
-        }
-        if( Event.type == SDL_KEYDOWN && Event.key.keysym.sym == SDLK_n ) {
-            CurrentRenderObject = RenderObjectManagerGetSelectedRenderObject(Application->RenderObjectManager);
-            if( CurrentRenderObject != NULL ) {
-                NextPose = (CurrentRenderObject->CurrentAnimationIndex + 1) % 
-                    CurrentRenderObject->NumAnimations;
-                while( !BSDRenderObjectSetAnimationPose(CurrentRenderObject,NextPose,0,0) ) {
-                    NextPose = (NextPose + 1 ) % CurrentRenderObject->NumAnimations;
-                }                
-            }
         }
         GUIProcessEvent(Application->GUI,&Event);
         if( GUIIsMouseFree() ) {

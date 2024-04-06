@@ -22,6 +22,7 @@
 #include "GUI.h"
 #include "../Common/VRAM.h"
 #include "JPModelViewer.h"
+#include "TSP.h"
 
 void GUIFree(GUI_t *GUI)
 {
@@ -112,15 +113,9 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
     BSDRenderObjectPack_t *PackIterator;
     BSDRenderObject_t *RenderObjectIterator;
     BSDRenderObject_t *CurrentRenderObject;
-    BSDAnimationFrame_t *CurrentFrame;
     ImVec2 ZeroSize;
-    int IsSelected;
     int DisableNode;
     char SmallBuffer[256];
-    int i;
-    int Changed;
-    ImGuiTableFlags TableFlags;
-    ImGuiInputTextFlags InputTextFlags;
     ImGuiTreeNodeFlags TreeNodeFlags;
 
     
@@ -135,8 +130,6 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
         igText("Press and Hold The Left Mouse Button to Rotate the Camera");
         igText("Scroll the Mouse Wheel to Zoom the Camera In and Out");
         igText("Press A and S to strafe the Camera left-right,Spacebar and Z to move it up-down");
-        igText("Press and Hold M to change to the next animation frame using the current Pose");
-        igText("Press N to change to the next animation pose");
         igText("Press Escape to exit the program");
     }
     if( igCollapsingHeader_TreeNodeFlags("Camera",ImGuiTreeNodeFlags_DefaultOpen) ) {
@@ -165,7 +158,7 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
         }
     }
     TreeNodeFlags = RenderObjectManager->BSDList != NULL ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None;
-    if( igCollapsingHeader_TreeNodeFlags("Animated RenderObjects List",TreeNodeFlags) ) {
+    if( igCollapsingHeader_TreeNodeFlags("RenderObjects List",TreeNodeFlags) ) {
         for(PackIterator = RenderObjectManager->BSDList; PackIterator; PackIterator = PackIterator->Next) {
             TreeNodeFlags = ImGuiTreeNodeFlags_None;
             if(  PackIterator == RenderObjectManagerGetSelectedBSDPack(RenderObjectManager) ) {
@@ -173,10 +166,6 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
             }
             if( igTreeNodeEx_Str(PackIterator->Name,TreeNodeFlags) ) {
                 igSameLine(0,-1);
-                //NOTE(Adriano):We do not allow for duplicated BSD however since we support both MOH and MOH:Underground then
-                //this could be confusing since the ID would for example be 2_1 for both versions when loading Mission 2 Level 1.
-                //In order to solve this we just append the GameVersion in order to obtain the final Id which will be
-                //in this example 2_1.BSD0 or 2_1.BSD1 thus solving any potential conflict.
                 if( igSmallButton("Remove") ) {
                     if( RenderObjectManagerDeleteBSDPack(RenderObjectManager,PackIterator->Name) ) {
                         igTreePop();
@@ -188,7 +177,7 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
                     RenderObjectIterator = RenderObjectIterator->Next ) {
                     TreeNodeFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Bullet;
                     DisableNode = 0;
-                    sprintf(SmallBuffer,"%i (%s)",RenderObjectIterator->Id, RenderObjectIterator->FileName);
+                    sprintf(SmallBuffer,"%i (%s)",RenderObjectIterator->Id, BSDGetRenderObjectFileName(RenderObjectIterator));
                     if( RenderObjectIterator == RenderObjectManagerGetSelectedRenderObject(RenderObjectManager) ) {
                         TreeNodeFlags |= ImGuiTreeNodeFlags_Selected;
                         DisableNode = 1;
@@ -211,149 +200,19 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
     }
     if( igCollapsingHeader_TreeNodeFlags("Current RenderObject Informations",ImGuiTreeNodeFlags_DefaultOpen) ) {
         CurrentRenderObject = RenderObjectManagerGetSelectedRenderObject(RenderObjectManager);
-        if( 1/*!CurrentRenderObject*/ ) {
+        if(!CurrentRenderObject) {
             igText("No RenderObject selected.");
         } else {
-            CurrentFrame = BSDRenderObjectGetCurrentFrame(CurrentRenderObject);
-            igText("Id:%i (%s)",CurrentRenderObject->Id, CurrentRenderObject->FileName);
-            igText("Type:%i",CurrentRenderObject->Type);
+            igText("Id:%u",CurrentRenderObject->Id, CurrentRenderObject->FileName);
+            igText("FileName:%s",BSDGetRenderObjectFileName(CurrentRenderObject));
             igText("Scale:%f;%f;%f",CurrentRenderObject->Scale[0],CurrentRenderObject->Scale[1],CurrentRenderObject->Scale[2]);
-            igText("References RenderObject Id:%i",CurrentRenderObject->ReferencedRenderObjectId);
-            igText("Current Animation Index:%i",CurrentRenderObject->CurrentAnimationIndex);
-            igText("Current Frame Index:%i/%i",CurrentRenderObject->CurrentFrameIndex,
-                   CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].NumFrames);
-            igText("Current Frame Interpolation Index:%i (From %i to %i)",CurrentFrame->FrameInterpolationIndex,
-                   HighNibble(CurrentFrame->FrameInterpolationIndex),
-                   LowNibble(CurrentFrame->FrameInterpolationIndex));
-            igText("NumAnimations:%i",CurrentRenderObject->NumAnimations);
-            sprintf(SmallBuffer,"Animation %i",CurrentRenderObject->CurrentAnimationIndex + 1);
-            if( igBeginCombo("Animation Pose",SmallBuffer,0) ) {
-                for (i = 0; i < CurrentRenderObject->NumAnimations; i++) {
-                    IsSelected = (CurrentRenderObject->CurrentAnimationIndex == i);
-                    sprintf(SmallBuffer,"Animation %i",i + 1);
-                    if( !CurrentRenderObject->AnimationList[i].NumFrames ) {
-                        igBeginDisabled(1);
-                    }
-                    if (igSelectable_Bool(SmallBuffer, IsSelected,0,ZeroSize)) {
-                        if( CurrentRenderObject->CurrentAnimationIndex != i ) {
-                            if( !BSDRenderObjectSetAnimationPose(CurrentRenderObject,i,0,0) ) {
-                                ErrorMessageDialogSet(GUI->ErrorMessageDialog,"Failed to set animation pose");
-                            }
-                        }
-                    }
-                    if( IsSelected ) {
-                        igSetItemDefaultFocus();
-                    }
-                    if( !CurrentRenderObject->AnimationList[i].NumFrames ) {
-                        igEndDisabled();
-                    }
-                }
-                igEndCombo();
-            }
-            sprintf(SmallBuffer,"Frame %i",CurrentRenderObject->CurrentFrameIndex + 1);
-            if( igBeginCombo("Animation Frame List",SmallBuffer,0) ) {
-                for( i = 0; i < CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].NumFrames; i++ ) {
-                    IsSelected = (CurrentRenderObject->CurrentFrameIndex == i);
-                    sprintf(SmallBuffer,"Frame %i",i + 1);
-                    if (igSelectable_Bool(SmallBuffer, IsSelected,0,ZeroSize)) {
-                        if( CurrentRenderObject->CurrentFrameIndex != i ) {
-                            if( !BSDRenderObjectSetAnimationPose(CurrentRenderObject,CurrentRenderObject->CurrentAnimationIndex,i,0) ) {
-                                ErrorMessageDialogSet(GUI->ErrorMessageDialog,"Failed to set animation pose");
-                            }
-                        }
-                    }
-                    if( IsSelected ) {
-                        igSetItemDefaultFocus();
-                    }
-                }
-                igEndCombo();
-            }
-            if( igCollapsingHeader_TreeNodeFlags("Quaternion List",ImGuiTreeNodeFlags_None) ) {
-                igSeparator();
-                igText("Changes to an input-field can be undo by pressing CTRL-Z.\n");
-                igText("Note that numbers are in fixed point math where 4096 is equals to 1\n");
-                if( igButton("Reset",ZeroSize) ) {
-                    BSDRenderObjectResetFrameQuaternionList(CurrentFrame);
-                    BSDRenderObjectSetAnimationPose(CurrentRenderObject,CurrentRenderObject->CurrentAnimationIndex,
-                                                            CurrentRenderObject->CurrentFrameIndex,1);
-
-                }
-                TableFlags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Borders | 
-                    ImGuiTableFlags_RowBg | ImGuiTableFlags_NoHostExtendX;
-                if( igBeginTable("Quaternion List",5,TableFlags,ZeroSize,0.f) ) {
-                    igTableSetupColumn("Quaternion",0,0.f,0);
-                    igTableSetupColumn("x",0,0.f,0);
-                    igTableSetupColumn("y",0,0.f,0);
-                    igTableSetupColumn("z",0,0.f,0);
-                    igTableSetupColumn("w",0,0.f,0);
-
-                    igTableHeadersRow();
-                    InputTextFlags = ImGuiInputTextFlags_CharsDecimal;
-                    if( RenderObjectManagerIsAnimationPlaying(RenderObjectManager) ) {
-                        InputTextFlags |= ImGuiInputTextFlags_ReadOnly;
-                    }
-                    for( i = 0; i < CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].
-                        Frame[CurrentRenderObject->CurrentFrameIndex].NumQuaternions; i++ ) {
-                        Changed = 0;
-                        igTableNextRow(0,0.f);
-                        igTableSetColumnIndex(0);
-                        igAlignTextToFramePadding(); 
-                        igText("Quaternion %i",i);
-                        igTableSetColumnIndex(1);
-                        igPushID_Int(5 * i + 1); 
-                        Changed |= igInputScalar("##Q1", ImGuiDataType_S16, 
-                                                (short *) &CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].
-                                                Frame[CurrentRenderObject->CurrentFrameIndex].
-                                                CurrentQuaternionList[i].x,NULL,NULL,NULL,InputTextFlags);
-                        igPopID();
-                        igTableSetColumnIndex(2);
-                        igPushID_Int(5 * i + 2); 
-                        Changed |= igInputScalar("##Q2", ImGuiDataType_S16, 
-                                                (short *) &CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].
-                                                Frame[CurrentRenderObject->CurrentFrameIndex].
-                                                CurrentQuaternionList[i].y,NULL,NULL,NULL,InputTextFlags);
-                        igPopID();
-                        igTableSetColumnIndex(3);
-                        igPushID_Int(5 * i + 3);
-                        Changed |= igInputScalar("##Q3", ImGuiDataType_S16, 
-                                                (short *) &CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].
-                                                Frame[CurrentRenderObject->CurrentFrameIndex].
-                                                CurrentQuaternionList[i].z,NULL,NULL,NULL,InputTextFlags);
-                        igPopID();
-                        igTableSetColumnIndex(4);
-                        igPushID_Int(5 * i + 4);
-                        Changed |= igInputScalar("##Q4", ImGuiDataType_S16, 
-                                                (short *) &CurrentRenderObject->AnimationList[CurrentRenderObject->CurrentAnimationIndex].
-                                                Frame[CurrentRenderObject->CurrentFrameIndex].
-                                                CurrentQuaternionList[i].w,NULL,NULL,NULL,InputTextFlags);
-                        igPopID();
-                        if( Changed ) {
-                            BSDRenderObjectSetAnimationPose(CurrentRenderObject,CurrentRenderObject->CurrentAnimationIndex,
-                                                            CurrentRenderObject->CurrentFrameIndex,1);
-                        }
-                    }
-                    igEndTable();
-                }
-            }
-            igSeparator();
-            if( igButton("Play Animation",ZeroSize) ) {
-                if( !RenderObjectManagerIsAnimationPlaying(RenderObjectManager) ) {
-                    CurrentRenderObject->CurrentFrameIndex = 0;
-                    RenderObjectManagerSetAnimationPlay(RenderObjectManager,1);
-                }
-                
-            }
-            igSameLine(0,-1);
-            if( igButton("Stop Animation",ZeroSize) ) {
-                RenderObjectManagerSetAnimationPlay(RenderObjectManager,0);
-            }
             igSeparator();
             igText("Export selected model");
-            if( igButton("Export current pose to Ply",ZeroSize) ) {
+            if( igButton("Export to Ply",ZeroSize) ) {
                 RenderObjectManagerExportSelectedModel(RenderObjectManager,GUI,VideoSystem,RENDER_OBJECT_MANAGER_EXPORT_FORMAT_PLY,false);
             }
             igSameLine(0.f,10.f);
-            if( igButton("Export current animation to Ply",ZeroSize) ) {
+            if( igButton("Export to Ply",ZeroSize) ) {
                 RenderObjectManagerExportSelectedModel(RenderObjectManager,GUI,VideoSystem,RENDER_OBJECT_MANAGER_EXPORT_FORMAT_PLY,true);
             }
         }

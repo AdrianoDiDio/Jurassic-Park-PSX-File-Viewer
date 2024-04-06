@@ -123,6 +123,14 @@ void BSDFree(BSD_t *BSD)
     free(BSD);
 }
 
+char *BSDGetRenderObjectFileName(BSDRenderObject_t *RenderObject)
+{
+    if( !RenderObject ) {
+        return "";
+    }
+    return RenderObject->Id == 0 ? RenderObject->TSP->FName : 
+                        RenderObject->FileName;
+}
 
 void BSDRenderObjectExportPoseToPly(BSDRenderObject_t *RenderObject,BSDVertexTable_t *VertexTable,VRAM_t *VRAM,FILE *OutFile)
 {
@@ -1140,7 +1148,7 @@ int BSDReadRenderObjectChunk(BSD_t *BSD,FILE *BSDFile)
     DPrintf("BSDReadRenderObjectChunk:Reading %i RenderObject Elements...size %lu\n",
             BSD->RenderObjectTable.NumRenderObject,sizeof(BSDRenderObjectElement_t));
     
-    assert(sizeof(BSDRenderObjectElement_t) == MOH_RENDER_OBJECT_SIZE);
+    assert(sizeof(BSDRenderObjectElement_t) == JP_RENDER_OBJECT_SIZE);
     
     BSD->RenderObjectTable.RenderObject = malloc(BSD->RenderObjectTable.NumRenderObject * sizeof(BSDRenderObjectElement_t));
     if( !BSD->RenderObjectTable.RenderObject ) {
@@ -1148,8 +1156,8 @@ int BSDReadRenderObjectChunk(BSD_t *BSD,FILE *BSDFile)
         return 0;
     }
     for( i = 0; i < BSD->RenderObjectTable.NumRenderObject; i++ ) {
-        assert(GetCurrentFilePosition(BSDFile) == FirstRenderObjectPosition + (i * MOH_RENDER_OBJECT_SIZE));
-        assert(sizeof(BSD->RenderObjectTable.RenderObject[i]) == MOH_RENDER_OBJECT_SIZE);
+        assert(GetCurrentFilePosition(BSDFile) == FirstRenderObjectPosition + (i * JP_RENDER_OBJECT_SIZE));
+        assert(sizeof(BSD->RenderObjectTable.RenderObject[i]) == JP_RENDER_OBJECT_SIZE);
         DPrintf("Reading RenderObject %i at %i\n",i,GetCurrentFilePosition(BSDFile));
         fread(&BSD->RenderObjectTable.RenderObject[i],sizeof(BSD->RenderObjectTable.RenderObject[i]),1,BSDFile);
         DPrintf("RenderObject Id:%i\n",BSD->RenderObjectTable.RenderObject[i].Id);
@@ -1827,10 +1835,11 @@ int BSDParseRenderObjectUnTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRe
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
     for( i = 0; i < RenderObject->NumUntexturedFaces; i++ ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Reading Face at %i (%i)\n",GetCurrentFilePosition(BSDFile),GetCurrentFilePosition(BSDFile) - 2048);
-        DPrintf(" -- FACE %i --\n",i);     
+        DPrintf(" -- FACE %i --\n",i);
+        DPrintf("Reading a packet of size %li\n",sizeof(FaceData));
         fread(&FaceData,sizeof(FaceData),1,BSDFile);
         BSDFaceG3PacketToBSDFace(&RenderObject->UntexturedFaceList[i],FaceData[0]);
-        DPrintf("Reading vertex data at %i\n",GetCurrentFilePosition(BSDFile) - FirstFaceDef);
+        DPrintf("Reading vertex data at %i (%li)\n",GetCurrentFilePosition(BSDFile) - FirstFaceDef,GetCurrentFilePosition(BSDFile) - 2048);
         fread(&PackedVertexData,sizeof(PackedVertexData),1,BSDFile);
         DPrintf("Packed Vertex data is %u\n",PackedVertexData);
         DecodeVertexData(PackedVertexData, &Vert0, &Vert1, &Vert2);        
@@ -2027,16 +2036,7 @@ BSDRenderObject_t *BSDLoadAllRenderObjects(const char *FName)
     RenderObjectList = NULL;
     
     for( i = 0; i < BSD->RenderObjectTable.NumRenderObject; i++ ) {
-        if( BSD->RenderObjectTable.RenderObject[i].AnimationDataOffset == -1 ) {
-            continue;
-        }
-        if( strcmp(BSD->RenderObjectTable.RenderObject[i].FileName,"data\\dino\\compy\\compy.bad") ) {
-//             continue;
-        }
-
         DPrintf("BSDLoadAllAnimatedRenderObjects:Loading Animated RenderObject %s\n",BSD->RenderObjectTable.RenderObject[i].FileName);
-        //RenderObject = BSDLoadAnimatedRenderObject(BSD->RenderObjectTable.RenderObject[i],BSD->EntryTable,
-        //                                           BSDFile,i,ReferencedRenderObjectIndex,LocalGameVersion);
         RenderObject = BSDLoadStaticRenderObject(BSD->RenderObjectTable.RenderObject[i],BSD->EntryTable,
                                                    BSDFile,i);
         if( !RenderObject ) {

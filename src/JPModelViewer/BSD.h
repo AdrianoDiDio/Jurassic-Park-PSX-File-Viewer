@@ -27,8 +27,7 @@
 
 #define BSD_HEADER_SIZE 2048
 #define BSD_ANIMATED_LIGHTS_TABLE_SIZE 40
-#define MOH_RENDER_OBJECT_SIZE 2124
-#define MOH_UNDERGROUND_RENDER_OBJECT_SIZE 276
+#define JP_RENDER_OBJECT_SIZE 2124
 #define BSD_ANIMATION_FRAME_DATA_SIZE 20
 #define BSD_ANIMATED_LIGHTS_FILE_POSITION 0xD8
 #define BSD_RENDER_OBJECT_STARTING_OFFSET 0x1D8
@@ -150,17 +149,17 @@ typedef struct BSDAnimation_s
 
 
 typedef struct BSDRenderObjectElement_s {
-    int             Id;
-    int             UnknownOffset0;
-    int             AnimationDataOffset;
-    int             TSPOffset; //16
+    int             Id; // 0
+    int             UnknownOffset0; // 4
+    int             AnimationDataOffset; // 8
+    int             TSPOffset; //12
     char            U0[12]; // 32
-    int             AltAltFaceOffset; // 32
-    int             AltUntexturedFaceOffset; //36
-    int             AltFaceOffset; // 40
-    char            AltTexturedFaceOffset; // 44
-    int             UntexturedFaceOffset;// 48
-    int             TexturedFaceOffset; // 52
+    int             AltAltFaceOffset; // 36
+    int             AltUntexturedFaceOffset; //40
+    int             AltFaceOffset; // 44
+    int             AltTexturedFaceOffset; // 48
+    int             UntexturedFaceOffset;// 52
+    int             TexturedFaceOffset; // 56
     char            U[4];
     int             FaceTableOffset;
     int             UnknownOffset4;
@@ -308,21 +307,23 @@ typedef struct BSD_s {
 
 typedef struct Camera_s Camera_t;
 
-BSDRenderObject_t       *BSDLoadAllRenderObjects(const char *FName);
-void                    BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
-void                    BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
-void                    BSDRecursivelyApplyHierachyData(const BSDHierarchyBone_t *Bone,const BSDQuaternion_t *QuaternionList,
-                                                    BSDVertexTable_t *VertexTable,mat4 TransformMatrix);
-int                     BSDRenderObjectSetAnimationPose(BSDRenderObject_t *RenderObject,int AnimationIndex,int FrameIndex,int Override);
-BSDAnimationFrame_t     *BSDRenderObjectGetCurrentFrame(BSDRenderObject_t *RenderObject);
-void                    BSDRenderObjectResetFrameQuaternionList(BSDAnimationFrame_t *Frame);
+BSDRenderObject_t           *BSDLoadAllRenderObjects(const char *FName);
+char                        *BSDGetRenderObjectFileName(BSDRenderObject_t *RenderObject);
 
-void                    BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject);
-void                    BSDRenderObjectExportCurrentPoseToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FILE *OutFile);
-void                    BSDRenderObjectExportCurrentAnimationToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,const char *Directory,
+void                        BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
+void                        BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix);
+void                        BSDRecursivelyApplyHierachyData(const BSDHierarchyBone_t *Bone,const BSDQuaternion_t *QuaternionList,
+                                                    BSDVertexTable_t *VertexTable,mat4 TransformMatrix);
+int                         BSDRenderObjectSetAnimationPose(BSDRenderObject_t *RenderObject,int AnimationIndex,int FrameIndex,int Override);
+BSDAnimationFrame_t         *BSDRenderObjectGetCurrentFrame(BSDRenderObject_t *RenderObject);
+void                        BSDRenderObjectResetFrameQuaternionList(BSDAnimationFrame_t *Frame);
+
+void                        BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject);
+void                        BSDRenderObjectExportCurrentPoseToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FILE *OutFile);
+void                        BSDRenderObjectExportCurrentAnimationToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,const char *Directory,
                                                                    const char *EngineName);
-void                    BSDFree(BSD_t *BSD);
-void                    BSDFreeRenderObjectList(BSDRenderObject_t *RenderObjectList);
+void                        BSDFree(BSD_t *BSD);
+void                        BSDFreeRenderObjectList(BSDRenderObject_t *RenderObjectList);
 
 
 #endif //__BSD_H_
