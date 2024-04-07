@@ -49,13 +49,11 @@ Some sample screenshot taken from JPModelViewer:
 
 <img src="Images/JPModelViewer_Main_Level.png" width="600" />
 
-*Screenshot taken from the first level of jurassic park
-using JPModelViewer.*
+*Screenshot taken from JPModelViewer showing the first level of jurassic park.*
 
 <img src="Images/JPModelViewer_Lepto_Bad.png" width="600" />
 
-*Screenshot taken from one of the models contained inside the first level
-using JPModelViewer.*
+*Screenshot taken from JPModelViewer showing one of the models contained inside the first level.*
 
 ## Build
 
