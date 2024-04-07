@@ -907,7 +907,7 @@ void TSPDrawNode(TSPNode_t *Node,RenderObjectShader_t *RenderObjectShader,VRAM_t
     if( Node->NumFaces != 0 ) {
         if( 1/*LevelDrawSurfaces->IValue*/ ) {
             if( RenderObjectShader ) {
-                if( 0/*LevelEnableWireFrameMode->IValue*/ ) {
+                if( EnableWireFrameMode->IValue ) {
                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 } else {
                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -926,7 +926,7 @@ void TSPDrawNode(TSPNode_t *Node,RenderObjectShader_t *RenderObjectShader,VRAM_t
                 glBindTexture(GL_TEXTURE_2D,0);
                 glDisable(GL_BLEND);
                 glBlendColor(1.f, 1.f, 1.f, 1.f);
-                if( 0 ) {
+                if( EnableWireFrameMode->IValue ) {
                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                 }
             }
@@ -1286,7 +1286,7 @@ void TSPDrawList(TSP_t *TSPList,VRAM_t *VRAM,Camera_t *Camera,RenderObjectShader
     glm_rotate_x(MVPMatrix,glm_rad(180.f), MVPMatrix);
     glm_rotate_x(Camera->ViewMatrix,glm_rad(180.f), MVMatrix);
     glUseProgram(RenderObjectShader->Shader->ProgramId);
-    glUniform1i(RenderObjectShader->EnableLightingId, 1/*LevelEnableAmbientLight->IValue*/);
+    glUniform1i(RenderObjectShader->EnableLightingId, EnableAmbientLight->IValue);
     glUniform1i(RenderObjectShader->EnableFogId, 1/*LevelEnableFog->IValue*/);
     glUniformMatrix4fv(RenderObjectShader->MVPMatrixId,1,false,&MVPMatrix[0][0]);
     glUniformMatrix4fv(RenderObjectShader->MVMatrixId,1,false,&MVMatrix[0][0]);

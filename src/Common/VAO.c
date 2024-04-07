@@ -122,7 +122,6 @@ VAO_t *VAOInitXYZUVRGBCLUTColorModeInteger(int *Data,int DataSize,int Stride,int
     glBindVertexArray(0);
     
     return VAO;
-
 }
 VAO_t *VAOInitXYUVRGB(float *Data,int DataSize,int Stride,int VertexOffset,int TextureOffset,int ColorOffset,bool StaticDraw)
 {
