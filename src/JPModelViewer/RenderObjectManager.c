@@ -371,17 +371,17 @@ int RenderObjectManagerLoadBSD(RenderObjectManager_t *RenderObjectManager,GUI_t 
         ErrorCode = RENDER_OBJECT_MANAGER_BSD_ERROR_ALREADY_LOADED;
         goto Failure;
     }
-    ProgressBarIncrement(GUI->ProgressBar,VideoSystem,40,"Initializing VRAM");
+    ProgressBarIncrement(GUI->ProgressBar,VideoSystem,70,"Initializing VRAM");
     BSDPack->VRAM = VRAMInit(BSDPack->ImageList);
     if( !BSDPack->VRAM ) {
         DPrintf("RenderObjectManagerLoadBSD:Failed to initialize VRAM\n");
         ErrorCode = RENDER_OBJECT_MANAGER_BSD_ERROR_VRAM_INITIALIZATION;
         goto Failure;
     }
-    ProgressBarIncrement(GUI->ProgressBar,VideoSystem,90,"Setting default pose");
+    /*ProgressBarIncrement(GUI->ProgressBar,VideoSystem,90,"Setting default pose");
     for( Iterator = BSDPack->RenderObjectList; Iterator; Iterator = Iterator->Next ) {
         BSDRenderObjectSetAnimationPose(Iterator,0,0,0);
-    }
+    }*/
     ProgressBarIncrement(GUI->ProgressBar,VideoSystem,100,"Done");
     RenderObjectManagerAppendBSDPack(RenderObjectManager,BSDPack);
     if( !RenderObjectManager->SelectedBSDPack ) {

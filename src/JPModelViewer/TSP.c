@@ -573,11 +573,6 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
         DPrintf("Expected ABR rate:%i\n",ABRRate);
         DPrintf("Expected CLUT Position:%ix%i at page %i\n",CLUTPosX,CLUTPosY,CLUTPage);
 
-        
-        if( TSPIsFaceDynamic(TSP,DynamicIndex) ) {
-            RenderingFace->Flags |= TSP_FX_DYNAMIC_FACE;
-            RenderingFace->DynamicDataIndex = DynamicIndex;
-        }
 
         U0 += VRAMGetTexturePageX(VRAMPage);
         V0 += VRAMGetTexturePageY(VRAMPage,ColorMode);
