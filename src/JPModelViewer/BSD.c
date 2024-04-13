@@ -1576,6 +1576,11 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
     FaceListSize = (NumTexturedFaces + RenderObject->NumTexturedFaces) * sizeof(BSDFace_t);
     if( !RenderObject->TexturedFaceList ) {
         RenderObject->TexturedFaceList = malloc(FaceListSize);
+        if( !RenderObject->TexturedFaceList ) {
+            DPrintf("BSDParseRenderObjectUnTexturedFaceData:Failed to allocate memory for face array\n");
+            return 0;
+        }
+        memset(RenderObject->TexturedFaceList,0,FaceListSize);
     } else {
         TempFaceList = realloc(RenderObject->TexturedFaceList,FaceListSize);
         if( !TempFaceList ) {
@@ -1584,16 +1589,7 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
         }
         RenderObject->TexturedFaceList = TempFaceList;
     }
-    if( !RenderObject->TexturedFaceList ) {
-        DPrintf("BSDParseRenderObjectTexturedFaceData:Failed to allocate memory for face array\n");
-        return 0;
-    }
-    if( RenderObject->NumTexturedFaces == 0 ) {
-        memset(RenderObject->TexturedFaceList,0,FaceListSize);
-        BaseIndex = 0;
-    } else {
-        BaseIndex = RenderObject->NumTexturedFaces;
-    }
+    BaseIndex = RenderObject->NumTexturedFaces;
     RenderObject->NumTexturedFaces += NumTexturedFaces;
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
     for( i = BaseIndex; i < BaseIndex + NumTexturedFaces; i++ ) {
@@ -1681,16 +1677,7 @@ int BSDParseRenderObjectUntexturedFaceData(BSDRenderObject_t *RenderObject,BSDRe
         }
         RenderObject->UntexturedFaceList = TempFaceList;
     }
-    if( !RenderObject->UntexturedFaceList ) {
-        DPrintf("BSDParseRenderObjectUnTexturedFaceData:Failed to allocate memory for face array\n");
-        return 0;
-    }
-    if( RenderObject->NumUntexturedFaces == 0 ) {
-        memset(RenderObject->UntexturedFaceList,0,FaceListSize);
-        BaseIndex = 0;
-    } else {
-        BaseIndex = RenderObject->NumUntexturedFaces;
-    }
+    BaseIndex = RenderObject->NumUntexturedFaces;
     RenderObject->NumUntexturedFaces += NumUntexturedFaces;
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
     for( i = BaseIndex; i < BaseIndex + NumUntexturedFaces; i++ ) {

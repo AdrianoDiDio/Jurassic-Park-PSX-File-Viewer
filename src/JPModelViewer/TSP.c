@@ -499,7 +499,6 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
     int ColorMode;
     int VRAMPage;
     int ABRRate;
-    int DynamicIndex;
     TSPRenderingFace_t *RenderingFace;
     VAO_t *VAO;
     int i;
@@ -545,7 +544,6 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
         V2 = Node->FaceList[i].UV2.v;
         TSB = Node->FaceList[i].TSB;
         CBA = Node->FaceList[i].CBA;
-        DynamicIndex = i;
         
 
         ColorMode = (TSB >> 7) & 0x3;
@@ -1245,7 +1243,9 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
                 DPrintf("Parsing primitive of type %i at %li\n",PrimitiveType,(ftell(InFile) - 2048) - 2);
                 switch(PrimitiveType) {
                     case 0:
+                    case 2:
                     case 4:
+                    case 6:
                         //Triangle, Texture On If 0 Off 4
                         fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V0,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V0),1,InFile);
                         fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V1,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V1),1,InFile);
@@ -1253,26 +1253,10 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
                         CurrentFaceIndex++;
                         break;
                     case 1:
-                    case 5:
-                        //Quad, Texture On If 1 Off 5
-                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex],sizeof(TSPFace_t),1,InFile);
-                        fread(&Pad,sizeof(Pad),1,InFile);
-                        TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
-                        DPrintf("Pad %i;%i\n",Pad.u,Pad.v);
-                        CurrentFaceIndex++;
-                        break;
-                    case 2:
-                    case 6:
-                        //Triangle Gourad Texture On If 2 Off 6
-                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V0,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V0),1,InFile);
-                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V1,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V1),1,InFile);
-                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V2,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V2),1,InFile);
-                        CurrentFaceIndex++;
-                        break;
                     case 3:
+                    case 5:
                     case 7:
-                        //Quad Gourad Texture On If 3 Off 7
-                        //Made of two triangle where each one has a size of 18
+                        //Quad, Texture On If 1 Off 5
                         fread(&TSP->Node[i].FaceList[CurrentFaceIndex],sizeof(TSPFace_t),1,InFile);
                         fread(&Pad,sizeof(Pad),1,InFile);
                         TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
@@ -1285,7 +1269,6 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
             }
             DPrintf("Expected %i faces got %i\n",TSP->Node[i].NumFaces, CurrentFaceIndex);
             assert(CurrentFaceIndex == TSP->Node[i].NumFaces);
-//                 exit(0);
             fseek(InFile,PrevFilePosition,SEEK_SET);            
         }
     }
