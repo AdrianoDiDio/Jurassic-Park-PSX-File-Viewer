@@ -29,7 +29,7 @@ typedef enum {
     RENDER_OBJECT_MANAGER_BSD_NO_ERRORS = 1,
     RENDER_OBJECT_MANAGER_BSD_ERROR_GENERIC = 0,
     RENDER_OBJECT_MANAGER_BSD_ERROR_INVALID_TAF_FILE = -1,
-    RENDER_OBJECT_MANAGER_BSD_ERROR_NO_ANIMATED_RENDEROBJECTS = -2,
+    RENDER_OBJECT_MANAGER_BSD_ERROR_NO_RENDEROBJECTS = -2,
     RENDER_OBJECT_MANAGER_BSD_ERROR_ALREADY_LOADED = -3,
     RENDER_OBJECT_MANAGER_BSD_ERROR_VRAM_INITIALIZATION = -4 
 } RenderObjectManagerBSDErrorCode;
@@ -68,7 +68,6 @@ typedef struct RenderObjectManagerDialogData_s {
     VideoSystem_t                   *VideoSystem;
     GUI_t                           *GUI;
     int                             OutputFormat;
-    bool                            ExportCurrentAnimation; // If not true, it will export only the current pose
 } RenderObjectManagerDialogData_t;
 
 extern Config_t *EnableWireFrameMode;

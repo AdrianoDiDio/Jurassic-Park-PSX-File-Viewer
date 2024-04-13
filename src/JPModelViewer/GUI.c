@@ -211,10 +211,6 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
             if( igButton("Export to Ply",ZeroSize) ) {
                 RenderObjectManagerExportSelectedModel(RenderObjectManager,GUI,VideoSystem,RENDER_OBJECT_MANAGER_EXPORT_FORMAT_PLY,false);
             }
-            igSameLine(0.f,10.f);
-            if( igButton("Export to Ply",ZeroSize) ) {
-                RenderObjectManagerExportSelectedModel(RenderObjectManager,GUI,VideoSystem,RENDER_OBJECT_MANAGER_EXPORT_FORMAT_PLY,true);
-            }
         }
     }
     igEnd();

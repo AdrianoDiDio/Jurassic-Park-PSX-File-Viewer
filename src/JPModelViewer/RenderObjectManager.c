@@ -95,9 +95,8 @@ void RenderObjectManagerCloseDialog(FileDialog_t *FileDialog)
 
 }
 void RenderObjectManagerExportSelectedModelToPly(RenderObjectManager_t *RenderObjectManager,ProgressBar_t *ProgressBar,VideoSystem_t *VideoSystem,
-                                               const char *Directory,bool ExportCurrentAnimation)
+                                               const char *Directory)
 {
-    char *EngineName;
     char *PlyFile;
     char *FileName;
     char *TextureFile;
@@ -107,42 +106,37 @@ void RenderObjectManagerExportSelectedModelToPly(RenderObjectManager_t *RenderOb
     BSDRenderObject_t *CurrentRenderObject;
     
     if( !RenderObjectManager ) {
-        DPrintf("RenderObjectManagerExportCurrentPoseToPly:Invalid RenderObjectManager\n");
+        DPrintf("RenderObjectManagerExportSelectedModelToPly:Invalid RenderObjectManager\n");
         return;
     }
     CurrentBSDPack = RenderObjectManagerGetSelectedBSDPack(RenderObjectManager);
     if( !CurrentBSDPack ) {
-        DPrintf("RenderObjectManagerExportCurrentPoseToPly:Invalid BSD Pack\n");
+        DPrintf("RenderObjectManagerExportSelectedModelToPly:Invalid BSD Pack\n");
         return;
     }
     CurrentRenderObject = RenderObjectManagerGetSelectedRenderObject(RenderObjectManager);
     if( !CurrentRenderObject ) {
-        DPrintf("RenderObjectManagerExportCurrentPoseToPly:Invalid RenderObject\n");
+        DPrintf("RenderObjectManagerExportSelectedModelToPly:Invalid RenderObject\n");
         return;
     }
-    EngineName = StringCopy("JP");
-    asprintf(&FileName,"RenderObject-%u-%i-%s.ply",CurrentRenderObject->Id,CurrentRenderObject->CurrentAnimationIndex,EngineName);
+    asprintf(&FileName,"RenderObject-%u-JP.ply",CurrentRenderObject->Id);
     asprintf(&PlyFile,"%s%c%s",Directory,PATH_SEPARATOR,FileName);
     BSDName = SwitchExt(CurrentBSDPack->Name,"");
     asprintf(&TextureFile,"%s%cvram-%s.png",Directory,PATH_SEPARATOR,BSDName);
-    ProgressBarSetDialogTitle(ProgressBar,"Exporting Current Pose to Ply...");
+    ProgressBarSetDialogTitle(ProgressBar,"Exporting Model to Ply...");
     ProgressBarIncrement(ProgressBar,VideoSystem,10,"Writing BSD data.");
-    if( ExportCurrentAnimation ) {
-        BSDRenderObjectExportCurrentAnimationToPly(CurrentRenderObject,CurrentBSDPack->VRAM,Directory,EngineName);
-    } else {
-        DPrintf("RenderObjectManagerExportCurrentPoseToPly:Dumping it...%s\n",PlyFile);
-        OutFile = fopen(PlyFile,"w");
-        if( !OutFile ) {
-            DPrintf("RenderObjectManagerExportCurrentPoseToPly:Failed to open %s for writing\n",PlyFile);
-            return;
-        }
-        BSDRenderObjectExportCurrentPoseToPly(CurrentRenderObject,CurrentBSDPack->VRAM,OutFile);
-        fclose(OutFile);
+    
+    OutFile = fopen(PlyFile,"w");
+    if( !OutFile ) {
+        DPrintf("RenderObjectManagerExportSelectedModelToPly:Failed to open %s for writing\n",PlyFile);
+        return;
     }
+    BSDRenderObjectExportToPly(CurrentRenderObject,CurrentBSDPack->VRAM,OutFile);
+    fclose(OutFile);
+    
     ProgressBarIncrement(ProgressBar,VideoSystem,95,"Exporting VRAM.");
     VRAMSave(CurrentBSDPack->VRAM,TextureFile);
     ProgressBarIncrement(ProgressBar,VideoSystem,100,"Done.");
-    free(EngineName);
     free(FileName);
     free(PlyFile);
     free(TextureFile);
@@ -176,9 +170,8 @@ void RenderObjectManagerExportSelectedModel(RenderObjectManager_t *RenderObjectM
     Exporter->VideoSystem = VideoSystem;
     Exporter->GUI = GUI;
     Exporter->OutputFormat = OutputFormat;
-    Exporter->ExportCurrentAnimation = ExportCurrentAnimation;
 
-    FileDialogSetTitle(RenderObjectManager->ExportFileDialog,"Export Current Pose");
+    FileDialogSetTitle(RenderObjectManager->ExportFileDialog,"Export Model");
     FileDialogOpen(RenderObjectManager->ExportFileDialog,Exporter);
 
 }
@@ -190,8 +183,8 @@ const char *RenderObjectManagerErrorToString(int ErrorCode)
             return "Generic Error";
         case RENDER_OBJECT_MANAGER_BSD_ERROR_INVALID_TAF_FILE:
             return "TAF file was not valid or not found";
-        case RENDER_OBJECT_MANAGER_BSD_ERROR_NO_ANIMATED_RENDEROBJECTS:
-            return "BSD file was not valid or no animated RenderObjects could be found";
+        case RENDER_OBJECT_MANAGER_BSD_ERROR_NO_RENDEROBJECTS:
+            return "BSD file was not valid or no RenderObjects could be found";
         case RENDER_OBJECT_MANAGER_BSD_ERROR_ALREADY_LOADED:
             return "BSD File was already loaded";
         case RENDER_OBJECT_MANAGER_BSD_ERROR_VRAM_INITIALIZATION:
@@ -363,7 +356,7 @@ int RenderObjectManagerLoadBSD(RenderObjectManager_t *RenderObjectManager,GUI_t 
     BSDPack->RenderObjectList = BSDLoadAllRenderObjects(File);
     if( !BSDPack->RenderObjectList ) {
         DPrintf("RenderObjectManagerLoadBSD:Failed to load render objects from file\n");
-        ErrorCode = RENDER_OBJECT_MANAGER_BSD_ERROR_NO_ANIMATED_RENDEROBJECTS;
+        ErrorCode = RENDER_OBJECT_MANAGER_BSD_ERROR_NO_RENDEROBJECTS;
         goto Failure;
     }
     if( RenderObjectManagerGetBSDPack(RenderObjectManager,BSDPack->Name) != NULL ) {
@@ -427,8 +420,7 @@ void RenderObjectManagerOnExportDirSelect(FileDialog_t *FileDialog,const char *D
 
     switch( Exporter->OutputFormat ) {
         case RENDER_OBJECT_MANAGER_EXPORT_FORMAT_PLY:
-            RenderObjectManagerExportSelectedModelToPly(RenderObjectManager,Exporter->GUI->ProgressBar,Exporter->VideoSystem,Directory,
-                                                        Exporter->ExportCurrentAnimation);
+            RenderObjectManagerExportSelectedModelToPly(RenderObjectManager,Exporter->GUI->ProgressBar,Exporter->VideoSystem,Directory);
             break;
         default:
             DPrintf("RenderObjectManagerOnExportDirSelect:Invalid output format\n");

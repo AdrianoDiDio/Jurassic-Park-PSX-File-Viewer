@@ -126,7 +126,7 @@ char *BSDGetRenderObjectFileName(BSDRenderObject_t *RenderObject)
                         RenderObject->FileName;
 }
 
-void BSDRenderObjectExportPoseToPly(BSDRenderObject_t *RenderObject,BSDVertexTable_t *VertexTable,VRAM_t *VRAM,FILE *OutFile)
+void BSDRenderObjectExportFacesToPly(BSDRenderObject_t *RenderObject,BSDFace_t *FaceList,int NumFaces,VRAM_t *VRAM,FILE *OutFile)
 {
     char Buffer[256];
     float TextureWidth;
@@ -146,16 +146,22 @@ void BSDRenderObjectExportPoseToPly(BSDRenderObject_t *RenderObject,BSDVertexTab
     mat4 RotationMatrix;
     mat4 ScaleMatrix;
     mat4 ModelMatrix;
-    BSDAnimatedModelFace_t *CurrentFace;
+    BSDFace_t *CurrentFace;
     
     if( !RenderObject || !OutFile ) {
         bool InvalidFile = (OutFile == NULL ? true : false);
-        DPrintf("BSDRenderObjectExportPoseToObj: Invalid %s\n",InvalidFile ? "file" : "bsd struct");
+        DPrintf("BSDRenderObjectExportFacesToPly: Invalid %s\n",InvalidFile ? "file" : "bsd struct");
+        return;
+    }
+    
+    if( !NumFaces || !FaceList ) {
+        bool InvalidFaces = (FaceList == NULL ? true : false);
+        DPrintf("BSDRenderObjectExportFacesToPly: Invalid %s\n",InvalidFaces ? "faces" : "number of faces");
         return;
     }
     
     if( !VRAM ) {
-        DPrintf("BSDRenderObjectExportPoseToObj:Invalid VRAM data\n");
+        DPrintf("BSDRenderObjectExportFacesToPly:Invalid VRAM data\n");
         return;
     }
     
@@ -178,57 +184,57 @@ void BSDRenderObjectExportPoseToPly(BSDRenderObject_t *RenderObject,BSDVertexTab
     
     sprintf(Buffer,
         "element vertex %i\nproperty float x\nproperty float y\nproperty float z\nproperty float red\nproperty float green\nproperty float "
-        "blue\nproperty float s\nproperty float t\n",RenderObject->NumFaces * 3);
+        "blue\nproperty float s\nproperty float t\n",NumFaces * 3);
     fwrite(Buffer,strlen(Buffer),1,OutFile);
-    sprintf(Buffer,"element face %i\nproperty list uchar int vertex_indices\nend_header\n",RenderObject->NumFaces);
+    sprintf(Buffer,"element face %i\nproperty list uchar int vertex_indices\nend_header\n",NumFaces);
     fwrite(Buffer,strlen(Buffer),1,OutFile);
 
     
-    for( i = 0 ; i < RenderObject->NumFaces; i++ ) {
-        CurrentFace = &RenderObject->FaceList[i];
+    for( i = 0 ; i < NumFaces; i++ ) {
+        CurrentFace = &FaceList[i];
         VRAMPage = CurrentFace->TexInfo;
         ColorMode = (CurrentFace->TexInfo & 0xC0) >> 7;
         U0 = (((float)CurrentFace->UV0.u + 
             VRAMGetTexturePageX(VRAMPage))/TextureWidth);
-        V0 = /*255 -*/1.f - (((float)CurrentFace->UV0.v +
+        V0 = 1.f - (((float)CurrentFace->UV0.v +
                     VRAMGetTexturePageY(VRAMPage,ColorMode)) / TextureHeight);
         U1 = (((float)CurrentFace->UV1.u + 
             VRAMGetTexturePageX(VRAMPage)) / TextureWidth);
-        V1 = /*255 -*/1.f - (((float)CurrentFace->UV1.v + 
+        V1 = 1.f - (((float)CurrentFace->UV1.v + 
                     VRAMGetTexturePageY(VRAMPage,ColorMode)) /TextureHeight);
         U2 = (((float)CurrentFace->UV2.u + 
             VRAMGetTexturePageX(VRAMPage)) / TextureWidth);
-        V2 = /*255 -*/1.f - (((float)CurrentFace->UV2.v + 
+        V2 = 1.f - (((float)CurrentFace->UV2.v + 
                     VRAMGetTexturePageY(VRAMPage,ColorMode)) / TextureHeight);
         
-        VertPos[0] = VertexTable[CurrentFace->VertexTableIndex0&0x1F].VertexList[CurrentFace->VertexTableDataIndex0].x;
-        VertPos[1] = VertexTable[CurrentFace->VertexTableIndex0&0x1F].VertexList[CurrentFace->VertexTableDataIndex0].y;
-        VertPos[2] = VertexTable[CurrentFace->VertexTableIndex0&0x1F].VertexList[CurrentFace->VertexTableDataIndex0].z;
+        VertPos[0] = RenderObject->Vertex[CurrentFace->Vert0].x;
+        VertPos[1] = RenderObject->Vertex[CurrentFace->Vert0].y;
+        VertPos[2] = RenderObject->Vertex[CurrentFace->Vert0].z;
         glm_mat4_mulv3(ModelMatrix,VertPos,1.f,OutVector);
         sprintf(Buffer,"%f %f %f %f %f %f %f %f\n",OutVector[0] / 4096.f, 
                 OutVector[1] / 4096.f, OutVector[2] / 4096.f,
                 CurrentFace->RGB0.r / 255.f,CurrentFace->RGB0.g / 255.f,CurrentFace->RGB0.b / 255.f,U0,V0);
         fwrite(Buffer,strlen(Buffer),1,OutFile);
         
-        VertPos[0] = VertexTable[CurrentFace->VertexTableIndex1&0x1F].VertexList[CurrentFace->VertexTableDataIndex1].x;
-        VertPos[1] = VertexTable[CurrentFace->VertexTableIndex1&0x1F].VertexList[CurrentFace->VertexTableDataIndex1].y;
-        VertPos[2] = VertexTable[CurrentFace->VertexTableIndex1&0x1F].VertexList[CurrentFace->VertexTableDataIndex1].z;
+        VertPos[0] = RenderObject->Vertex[CurrentFace->Vert1].x;
+        VertPos[1] = RenderObject->Vertex[CurrentFace->Vert1].y;
+        VertPos[2] = RenderObject->Vertex[CurrentFace->Vert1].z;
         glm_mat4_mulv3(ModelMatrix,VertPos,1.f,OutVector);
         sprintf(Buffer,"%f %f %f %f %f %f %f %f\n",OutVector[0] / 4096.f, 
                 OutVector[1] / 4096.f, OutVector[2] / 4096.f,
                 CurrentFace->RGB1.r / 255.f,CurrentFace->RGB1.g / 255.f,CurrentFace->RGB1.b / 255.f,U1,V1);
         fwrite(Buffer,strlen(Buffer),1,OutFile);
 
-        VertPos[0] = VertexTable[CurrentFace->VertexTableIndex2&0x1F].VertexList[CurrentFace->VertexTableDataIndex2].x;
-        VertPos[1] = VertexTable[CurrentFace->VertexTableIndex2&0x1F].VertexList[CurrentFace->VertexTableDataIndex2].y;
-        VertPos[2] = VertexTable[CurrentFace->VertexTableIndex2&0x1F].VertexList[CurrentFace->VertexTableDataIndex2].z;
+        VertPos[0] = RenderObject->Vertex[CurrentFace->Vert2].x;
+        VertPos[1] = RenderObject->Vertex[CurrentFace->Vert2].y;
+        VertPos[2] = RenderObject->Vertex[CurrentFace->Vert2].z;
         glm_mat4_mulv3(ModelMatrix,VertPos,1.f,OutVector);
         sprintf(Buffer,"%f %f %f %f %f %f %f %f\n",OutVector[0] / 4096.f, 
                 OutVector[1] / 4096.f, OutVector[2] / 4096.f,
                 CurrentFace->RGB1.r / 255.f,CurrentFace->RGB1.g / 255.f,CurrentFace->RGB1.b / 255.f,U2,V2);
         fwrite(Buffer,strlen(Buffer),1,OutFile);
     }
-    for( i = 0; i < RenderObject->NumFaces; i++ ) {
+    for( i = 0; i < NumFaces; i++ ) {
         int Vert0 = (i * 3) + 0;
         int Vert1 = (i * 3) + 1;
         int Vert2 = (i * 3) + 2;
@@ -236,76 +242,32 @@ void BSDRenderObjectExportPoseToPly(BSDRenderObject_t *RenderObject,BSDVertexTab
         fwrite(Buffer,strlen(Buffer),1,OutFile);
     }
 }
-void BSDRenderObjectExportCurrentPoseToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FILE *OutFile)
+void BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FILE *OutFile)
 {    
     if( !RenderObject || !OutFile ) {
         bool InvalidFile = (OutFile == NULL ? true : false);
-        DPrintf("BSDRenderObjectExportPoseToObj: Invalid %s\n",InvalidFile ? "file" : "bsd struct");
+        DPrintf("BSDRenderObjectExportToPly: Invalid %s\n",InvalidFile ? "file" : "bsd struct");
         return;
     }
     
     if( !VRAM ) {
-        DPrintf("BSDRenderObjectExportPoseToObj:Invalid VRAM data\n");
+        DPrintf("BSDRenderObjectExportToPly:Invalid VRAM data\n");
         return;
     }
-    BSDRenderObjectExportPoseToPly(RenderObject,RenderObject->CurrentVertexTable,VRAM,OutFile);
-}
-void BSDRenderObjectExportCurrentAnimationToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,const char *Directory,const char *EngineName)
-{
-    BSDVertexTable_t *TempVertexTable;
-    FILE *OutFile;
-    mat4 TransformMatrix;
-    vec3 Translation;
-    int i;
-    int j;
-    char *PlyFile;
-    int VertexTableSize;
-    
-    if(RenderObject->CurrentAnimationIndex == -1 ) {
-        DPrintf("BSDRenderObjectExportCurrentAnimationToPly:Invalid animation index\n");
+    if( RenderObject->TSP ) {
+        TSPDumpDataToPlyFile(RenderObject->TSP,VRAM,OutFile);
         return;
     }
-    VertexTableSize = RenderObject->NumVertexTables * sizeof(BSDVertexTable_t);
-    TempVertexTable = malloc(VertexTableSize);
-    //Prepare the copy of the vertex table that will be used by the exporter
-    for( i = 0; i < RenderObject->NumVertexTables; i++ ) {
-        TempVertexTable[i].NumVertex = RenderObject->VertexTable[i].NumVertex;
-        if( RenderObject->VertexTable[i].Offset == -1 ) {
-            TempVertexTable[i].VertexList = NULL;
-        } else {
-            TempVertexTable[i].VertexList = malloc(RenderObject->VertexTable[i].NumVertex * sizeof(BSDVertex_t));
-        }
+    if( RenderObject->NumTexturedFaces > 0 ) {
+        BSDRenderObjectExportFacesToPly(RenderObject,RenderObject->TexturedFaceList,RenderObject->NumTexturedFaces,VRAM,OutFile);
+        return;
     }
-    for( i = 0; i < RenderObject->AnimationList[RenderObject->CurrentAnimationIndex].NumFrames; i++ ) {
-        asprintf(&PlyFile,"%s%cRenderObject-%u-%i-%i-%s.ply",Directory,PATH_SEPARATOR,RenderObject->Id,
-                 RenderObject->CurrentAnimationIndex,i,EngineName);
-        OutFile = fopen(PlyFile,"w");
-        glm_mat4_identity(TransformMatrix);
-        Translation[0] = RenderObject->AnimationList[RenderObject->CurrentAnimationIndex].Frame[i].Vector.x / 4096.f;
-        Translation[1] = RenderObject->AnimationList[RenderObject->CurrentAnimationIndex].Frame[i].Vector.y / 4096.f;
-        Translation[2] = RenderObject->AnimationList[RenderObject->CurrentAnimationIndex].Frame[i].Vector.z / 4096.f;
-        glm_translate_make(TransformMatrix,Translation);
-        //Copy the vertices for the current frame
-        for( j = 0; j < RenderObject->NumVertexTables; j++ ) {
-            memcpy(TempVertexTable[j].VertexList,
-                RenderObject->VertexTable[j].VertexList,sizeof(BSDVertex_t) * RenderObject->VertexTable[j].NumVertex);
-        }
-        //Apply the animation
-        BSDRecursivelyApplyHierachyData(RenderObject->HierarchyDataRoot,
-                                        RenderObject->AnimationList[RenderObject->CurrentAnimationIndex].Frame[i].QuaternionList,
-                                        TempVertexTable,TransformMatrix);
-        //Export it
-        BSDRenderObjectExportPoseToPly(RenderObject,TempVertexTable,VRAM,OutFile);
-        fclose(OutFile);
-        free(PlyFile);
+    if( RenderObject->NumUntexturedFaces > 0 ) {
+        BSDRenderObjectExportFacesToPly(RenderObject,RenderObject->UntexturedFaceList,RenderObject->NumUntexturedFaces,VRAM,OutFile);
+        return;
     }
-    for( i = 0; i < RenderObject->NumVertexTables; i++ ) {
-        if( TempVertexTable[i].VertexList ) {
-            free(TempVertexTable[i].VertexList);
-        }
-    }
-    free(TempVertexTable);
 }
+
 void BSDFillFaceVertexBuffer(int *Buffer,int *BufferSize,BSDVertex_t Vertex,int U0,int V0,BSDColor_t Color,int CLUTX,int CLUTY,int ColorMode)
 {
     if( !Buffer ) {
@@ -1736,7 +1698,12 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
         DPrintf("UV0:(%i;%i)\n",RenderObject->TexturedFaceList[i].UV0.u,RenderObject->TexturedFaceList[i].UV0.v);
         DPrintf("UV1:(%i;%i)\n",RenderObject->TexturedFaceList[i].UV1.u,RenderObject->TexturedFaceList[i].UV1.v);
         DPrintf("UV2:(%i;%i)\n",RenderObject->TexturedFaceList[i].UV2.u,RenderObject->TexturedFaceList[i].UV2.v);
-    
+        DPrintf("RGB0:(%i;%i;%i)\n",RenderObject->TexturedFaceList[i].RGB0.r,RenderObject->TexturedFaceList[i].RGB0.g,
+                RenderObject->TexturedFaceList[i].RGB0.b);
+        DPrintf("RGB1:(%i;%i;%i)\n",RenderObject->TexturedFaceList[i].RGB1.r,RenderObject->TexturedFaceList[i].RGB1.g,
+                RenderObject->TexturedFaceList[i].RGB1.b);
+        DPrintf("RGB2:(%i;%i;%i)\n",RenderObject->TexturedFaceList[i].RGB2.r,RenderObject->TexturedFaceList[i].RGB2.g,
+                RenderObject->TexturedFaceList[i].RGB2.b);
         DPrintf("Reading vertex data at %i\n",GetCurrentFilePosition(BSDFile) - FirstFaceDef);
         fread(&PackedVertexData,sizeof(PackedVertexData),1,BSDFile);
         DPrintf("Packed Vertex data is %u\n",PackedVertexData);
