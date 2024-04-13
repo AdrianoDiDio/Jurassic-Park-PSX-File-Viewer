@@ -439,7 +439,7 @@ int TSPGetColorIndex(int Color)
     return Color & 0xFF00FF;
 }
 
-void TSPFillFaceVertexBuffer(int *Buffer,int *BufferSize,TSPVert_t Vertex,Color1i_t Color,int U,int V,int CLUTX,int CLUTY,int ColorMode)
+void TSPFillFaceVertexBuffer(int *Buffer,int *BufferSize,TSPVert_t Vertex,Color1i_t Color,int U,int V,int CLUTX,int CLUTY,int ColorMode,bool Textured)
 {
     if( !Buffer ) {
         DPrintf("TSPFillFaceVertexBuffer:Invalid Buffer\n");
@@ -460,7 +460,8 @@ void TSPFillFaceVertexBuffer(int *Buffer,int *BufferSize,TSPVert_t Vertex,Color1
     Buffer[*BufferSize+8] = CLUTX;
     Buffer[*BufferSize+9] = CLUTY;
     Buffer[*BufferSize+10] = ColorMode;
-    *BufferSize += 11;
+    Buffer[*BufferSize+11] = Textured;
+    *BufferSize += 12;
 }
 
 void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
@@ -488,6 +489,7 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
     int ColorOffset;
     int CLUTOffset;
     int ColorModeOffset;
+    int TexturedOffset;
     int CLUTPosX;
     int CLUTPosY;
     int CLUTDestX;
@@ -506,14 +508,15 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
     Base = 0;
     Target = Node->NumFaces;
 
-//            XYZ UV RGB CLUT ColorMode
-    Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
+//            XYZ UV RGB CLUT ColorMode Textured
+    Stride = (3 + 2 + 3 + 2 + 1 + 1) * sizeof(int);
                 
     VertexOffset = 0;
     TextureOffset = 3;
     ColorOffset = 5;
     CLUTOffset = 8;
     ColorModeOffset = 10;
+    TexturedOffset = 11;
 
     NumTransparentFaces = Node->NumTransparentFaces;
     VertexSize = Stride * 3;
@@ -523,8 +526,8 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
     TransparentVertexSize = Stride * 3;
     TransparentVertexData = malloc(TransparentVertexSize);
     TransparentVertexPointer = 0;
-    VAO = VAOInitXYZUVRGBCLUTColorModeInteger(NULL,TotalVertexSize,Stride,VertexOffset,TextureOffset,ColorOffset,CLUTOffset,ColorModeOffset,
-                                              (Node->NumFaces - NumTransparentFaces) * 3);
+    VAO = VAOInitXYZUVRGBCLUTColorModeTexturedInteger(NULL,TotalVertexSize,Stride,VertexOffset,TextureOffset,ColorOffset,CLUTOffset,ColorModeOffset,
+                                                      TexturedOffset,(Node->NumFaces - NumTransparentFaces) * 3);
     Node->OpaqueFacesVAO = VAO;
     //NOTE(Adriano):Some levels have duplicated triangles...we need to make sure that the order in which they are rendered
     //              is such that they do not get overwritten by a later triangle definition with an invalid texture coordinate.
@@ -594,11 +597,11 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
                     U2,V2);
         if( (TSB & 0x4000) != 0) {
             TSPFillFaceVertexBuffer(TransparentVertexData,&TransparentVertexPointer,TSP->Vertex[Vert0],
-                                   TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode);
+                                   TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode,true);
             TSPFillFaceVertexBuffer(TransparentVertexData,&TransparentVertexPointer,TSP->Vertex[Vert1],
-                                   TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode);
+                                   TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode,true);
             TSPFillFaceVertexBuffer(TransparentVertexData,&TransparentVertexPointer,TSP->Vertex[Vert2],
-                                   TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode);
+                                   TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode,true);
             RenderingFace->VAOBufferOffset = TSP->TransparentVAO->CurrentSize;
             RenderingFace->BlendingMode = (TSB >> 5 ) & 3;
             RenderingFace->Flags |= TSP_FX_TRANSPARENT_FACE;
@@ -609,11 +612,11 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
             
         } else {
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert0],
-                                    TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode);
+                                    TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode,true);
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert1],
-                                    TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode);
+                                    TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode,true);
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert2],
-                                    TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode);
+                                    TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode,true);
             
             RenderingFace->VAOBufferOffset = Node->OpaqueFacesVAO->CurrentSize;
             RenderingFace->Flags |= TSP_FX_NONE;
@@ -663,7 +666,7 @@ void TSPCreateNodeBBoxVAO(TSP_t *TSPList)
          }
         Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
         TransparentVertexSize = Stride * 3 * NumTransparentFaces;
-        Iterator->TransparentVAO = VAOInitXYZUVRGBCLUTColorModeInteger(NULL,TransparentVertexSize,Stride,0,3,5,8,10,NumTransparentFaces * 3);
+        Iterator->TransparentVAO = VAOInitXYZUVRGBCLUTColorModeTexturedInteger(NULL,TransparentVertexSize,Stride,0,3,5,8,10,11,NumTransparentFaces * 3);
         
         for( i = 0; i < Iterator->Header.NumNodes; i++ ) {
             if( Iterator->Node[i].NumFaces != 0 ) {
@@ -934,185 +937,6 @@ void TSPDrawNode(TSPNode_t *Node,RenderObjectShader_t *RenderObjectShader,VRAM_t
     }
 }
 
-void TSPUpdateDynamicRenderingFaces(TSP_t *TSP,TSPRenderingFace_t *Face,VAO_t *VAO,TSPDynamicData_t *DynamicData)
-{
-    int ColorMode;
-    int VRAMPage;
-    int CLUTPosX;
-    int CLUTPosY;
-    int CLUTPage;
-    int CLUTDestX;
-    int CLUTDestY;
-    int FaceStride;
-    int DynamicDataIndex;
-    int Stride;
-    int U0;
-    int V0;
-    int U1;
-    int V1;
-    int U2;
-    int V2;
-    int TSB;
-    int CBA;
-    int BaseOffset;
-    int *VertexBuffer;
-    int VertexBufferSize;
-    int VertexBufferPointer;
-    int i;
-    
-    if( !Face ) {
-        DPrintf("TSPUpdateDynamicRenderingFaces:Invalid face data\n");
-        return;
-    }
-
-    if( !(Face->Flags & TSP_FX_DYNAMIC_FACE) ) {
-        return;
-    }
-    
-    Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
-    VertexBufferSize = Stride * 3;
-    VertexBuffer = malloc(VertexBufferSize);
-    FaceStride =  DynamicData->CurrentStride * DynamicData->Header.NumFacesIndex;
-    
-    glBindBuffer(GL_ARRAY_BUFFER, VAO->VBOId[0]);
-    for( i = 0; i < DynamicData->Header.NumFacesIndex; FaceStride++,i++ ) {
-        DynamicDataIndex = DynamicData->FaceIndexList[i];
-        if( Face->DynamicDataIndex  != DynamicDataIndex ) {
-            continue;
-        }
-        VertexBufferPointer = 0;
-        
-        TSPDynamicFaceData_t *FaceData = &DynamicData->FaceDataList[FaceStride];
-        TSB = FaceData->TSB;
-        CBA = FaceData->CBA;
-        U0 = FaceData->UV0.u;
-        V0 = FaceData->UV0.v;
-        U1 = FaceData->UV1.u;
-        V1 = FaceData->UV1.v;
-        U2 = FaceData->UV2.u;
-        V2 = FaceData->UV2.v;
-        
-        BaseOffset = (Face->VAOBufferOffset * Stride );
-        ColorMode = (TSB >> 7) & 0x3;
-        VRAMPage = TSB & 0x1F;
-        
-            
-        CLUTPosX = (CBA << 4) & 0x3F0;
-        CLUTPosY = (CBA >> 6) & 0x1ff;
-        CLUTPage = VRAMGetCLUTPage(CLUTPosX,CLUTPosY);
-        CLUTDestX = VRAMGetCLUTPositionX(CLUTPosX,CLUTPosY,CLUTPage);
-        CLUTDestY = CLUTPosY + VRAMGetCLUTOffsetY(ColorMode);
-        CLUTDestX += VRAMGetTexturePageX(CLUTPage);
-        
-        U0 += VRAMGetTexturePageX(VRAMPage);
-        V0 += VRAMGetTexturePageY(VRAMPage,ColorMode);
-        U1 += VRAMGetTexturePageX(VRAMPage);
-        V1 += VRAMGetTexturePageY(VRAMPage,ColorMode);
-        U2 += VRAMGetTexturePageX(VRAMPage);
-        V2 += VRAMGetTexturePageY(VRAMPage,ColorMode);
-
-
-        TSPFillFaceVertexBuffer(VertexBuffer,&VertexBufferPointer,Face->Vert0,Face->Colors[0],U0,V0,CLUTDestX,CLUTDestY,ColorMode);
-        TSPFillFaceVertexBuffer(VertexBuffer,&VertexBufferPointer,Face->Vert1,Face->Colors[1],U1,V1,CLUTDestX,CLUTDestY,ColorMode);
-        TSPFillFaceVertexBuffer(VertexBuffer,&VertexBufferPointer,Face->Vert2,Face->Colors[2],U2,V2,CLUTDestX,CLUTDestY,ColorMode);
-        glBufferSubData(GL_ARRAY_BUFFER, BaseOffset, VertexBufferSize, VertexBuffer);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    free(VertexBuffer);
-}
-
-void TSPUpdateDynamicFaceNodes(TSP_t *TSP,TSPNode_t *Node,TSPDynamicData_t *DynamicData,Camera_t *Camera)
-{
-    TSPRenderingFace_t *Iterator;
-
-    if( !Node ) {
-        return;
-    }
-    
-//     if( !TSPBoxInFrustum(Camera,Node->BBox) ) {
-//         return;
-//     }
-    
-    if( Node->NumFaces != 0 ) {
-        for( Iterator = Node->OpaqueFaceList; Iterator; Iterator = Iterator->Next ) {
-           TSPUpdateDynamicRenderingFaces(TSP,Iterator,Node->OpaqueFacesVAO,DynamicData);
-        }
-
-    } else {
-        TSPUpdateDynamicFaceNodes(TSP,Node->Child[1],DynamicData,Camera);
-        TSPUpdateDynamicFaceNodes(TSP,Node->Child[2],DynamicData,Camera);
-        TSPUpdateDynamicFaceNodes(TSP,Node->Child[0],DynamicData,Camera);
-    }
-}
-void TSPUpdateDynamicTransparentFaces(TSP_t *TSP,TSPDynamicData_t *DynamicData)
-{
-    TSPRenderingFace_t *Iterator;
-    
-    for( Iterator = TSP->TransparentFaceList; Iterator; Iterator = Iterator->Next ) {
-        TSPUpdateDynamicRenderingFaces(TSP,Iterator,TSP->TransparentVAO,DynamicData);
-    }
-}
-
-void TSPUpdateDynamicFaces(TSP_t *TSPList,Camera_t *Camera,int DynamicDataIndex)
-{
-    TSP_t *Iterator;
-    int i;
-    long Now;
-    
-
-    for( Iterator = TSPList; Iterator; Iterator = Iterator->Next ) {
-        for( i = 0; i < Iterator->Header.NumDynamicDataBlock; i++ ) {
-            if( Iterator->DynamicData[i].Header.DynamicDataIndex == DynamicDataIndex ) {
-                Now = SysMilliseconds();
-                if( (Now - Iterator->DynamicData[i].LastUpdateTime) < 120 ) {
-                    continue;
-                }
-                Iterator->DynamicData[i].LastUpdateTime = Now;
-                switch( Iterator->DynamicData[i].Header.EffectType ) {
-                    case TSP_DYNAMIC_FACE_EFFECT_PLAY_AND_STOP_TO_LAST:
-                        Iterator->DynamicData[i].CurrentStride += Iterator->DynamicData[i].IncrementOffset;
-                        if( Iterator->DynamicData[i].CurrentStride >= Iterator->DynamicData[i].Header.FaceDataSizeMultiplier ) {
-                            Iterator->DynamicData[i].CurrentStride = Iterator->DynamicData[i].Header.FaceDataSizeMultiplier - 1;
-                            Iterator->DynamicData[i].IncrementOffset = 0;
-                        }
-                        break;
-                    case TSP_DYNAMIC_FACE_EFFECT_JUMP_TO_LAST:
-                        Iterator->DynamicData[i].CurrentStride += 23;
-                        Iterator->DynamicData[i].CurrentStride %= Iterator->DynamicData[i].Header.FaceDataSizeMultiplier;
-                        break;
-                    case TSP_DYNAMIC_FACE_EFFECT_CYCLE:
-                        Iterator->DynamicData[i].CurrentStride++;
-                        if( Iterator->DynamicData[i].CurrentStride >= Iterator->DynamicData[i].Header.FaceDataSizeMultiplier ) {
-                            Iterator->DynamicData[i].CurrentStride = 0;
-                        }
-                        break;
-                    case TSP_DYNAMIC_FACE_EFFECT_PULSE:
-                        Iterator->DynamicData[i].CurrentStride += Iterator->DynamicData[i].IncrementOffset;
-                        if( Iterator->DynamicData[i].CurrentStride < 0 ) {
-                            Iterator->DynamicData[i].CurrentStride = 1;
-                            Iterator->DynamicData[i].IncrementOffset = 1;
-                        } else {
-                            if( Iterator->DynamicData[i].CurrentStride >= Iterator->DynamicData[i].Header.FaceDataSizeMultiplier ) {
-                                Iterator->DynamicData[i].CurrentStride = Iterator->DynamicData[i].Header.FaceDataSizeMultiplier - 2;
-                                Iterator->DynamicData[i].IncrementOffset = -1;
-                            }
-                        }
-                        break;
-                }
-
-//                 TSPUpdateFaces(Iterator,&Iterator->DynamicData[i]);
-                DPrintf("TSP File %s:Update Dynamic Data with index %i Unk0:%i Unk1:%i CurrentStride:%i MaxStride:%i\n",
-                        Iterator->FName,DynamicDataIndex,Iterator->DynamicData[i].Header.Unk0,
-                        Iterator->DynamicData[i].Header.EffectType,Iterator->DynamicData[i].CurrentStride,
-                        Iterator->DynamicData[i].Header.FaceDataSizeMultiplier
-                );
-                TSPUpdateDynamicFaceNodes(Iterator,&Iterator->Node[0],&Iterator->DynamicData[i],Camera);
-                TSPUpdateDynamicTransparentFaces(Iterator,&Iterator->DynamicData[i]);
-            }
-        }
-    }
-}
-
 void TSPUpdateAnimatedRenderingFace(TSPRenderingFace_t *Face,VAO_t *VAO,BSD_t *BSD,int Reset)
 {
     Color1i_t OriginalColor;
@@ -1130,7 +954,7 @@ void TSPUpdateAnimatedRenderingFace(TSPRenderingFace_t *Face,VAO_t *VAO,BSD_t *B
         return;
     }
     
-    Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
+    Stride = (3 + 2 + 3 + 2 + 1 + 1) * sizeof(int);
     glBindBuffer(GL_ARRAY_BUFFER, VAO->VBOId[0]);
     BaseOffset = (Face->VAOBufferOffset * Stride );
     
@@ -1264,7 +1088,6 @@ void TSPDrawList(TSP_t *TSPList,VRAM_t *VRAM,Camera_t *Camera,RenderObjectShader
 {
     TSP_t *Iterator;
     mat4 MVPMatrix;
-    mat4 MVMatrix;
     
     if( !TSPList ) {
         DPrintf("TSPDrawList:Invalid TSP data\n");
@@ -1279,12 +1102,10 @@ void TSPDrawList(TSP_t *TSPList,VRAM_t *VRAM,Camera_t *Camera,RenderObjectShader
     
     //Emulate PSX Coordinate system...
     glm_rotate_x(MVPMatrix,glm_rad(180.f), MVPMatrix);
-    glm_rotate_x(Camera->ViewMatrix,glm_rad(180.f), MVMatrix);
     glUseProgram(RenderObjectShader->Shader->ProgramId);
     glUniform1i(RenderObjectShader->EnableLightingId, EnableAmbientLight->IValue);
-    glUniform1i(RenderObjectShader->EnableFogId, 1/*LevelEnableFog->IValue*/);
     glUniformMatrix4fv(RenderObjectShader->MVPMatrixId,1,false,&MVPMatrix[0][0]);
-    glUniformMatrix4fv(RenderObjectShader->MVMatrixId,1,false,&MVMatrix[0][0]);
+
     for( Iterator = TSPList; Iterator; Iterator = Iterator->Next ) {
         if( !Iterator->VAOCreated ) {
             TSPCreateVAOs(Iterator);

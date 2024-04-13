@@ -1,21 +1,17 @@
 #version 330 core
-out vec4 FragColor;
+out vec4 fragColor;
   
-in vec3 ourColor;
-in vec2 TexCoord;
-in float LightingEnabled;
-in float FogEnabled;
-in float FogFactor;
-in float ourFogNear;
-in vec3  ourFogColor;
+in vec3 color;
+in vec2 texCoord;
+in float lightingEnabled;
 in vec2 CLUTCoord;
-flat in int ourColorMode;
+flat in int colorMode;
 flat in int STPMode;
+flat in int textured;
 
-uniform usampler2D ourIndexTexture;
-uniform sampler2D ourPaletteTexture;
+uniform usampler2D indexTexture;
+uniform sampler2D paletteTexture;
         
-const float FogMax = 6000.f;
 
 uint InternalToPsxColor(vec4 c) {
     uint a = uint(floor(c.a + 0.5));
@@ -27,42 +23,35 @@ uint InternalToPsxColor(vec4 c) {
 
 void main()
 {
-    uvec4 TexColor;
+    uvec4 texColor;
     uint CLUTIndex;
     vec4 CLUTTexel;
     uint CLUTX;
     uint CLUTY;
-    float FogMin;
-    float InterpolationFactor;
 
-    if( ourColorMode != 50 ) {
+    if( textured == 1 ) {
         //NOTE(Adriano):16-bpp mode textures are encoded directly into CLUT.
-        if( ourColorMode == 2 ) {
-            CLUTTexel = texelFetch(ourPaletteTexture, ivec2(TexCoord), 0);
+        if( colorMode == 2 ) {
+            CLUTTexel = texelFetch(paletteTexture, ivec2(texCoord), 0);
         } else {
-            TexColor = texelFetch(ourIndexTexture, ivec2(TexCoord), 0);
-            CLUTIndex = TexColor.r;
+            texColor = texelFetch(indexTexture, ivec2(texCoord), 0);
+            CLUTIndex = texColor.r;
             CLUTX = uint(CLUTCoord.x) + CLUTIndex;
             CLUTY = uint(CLUTCoord.y);
-            CLUTTexel = texelFetch(ourPaletteTexture, ivec2(CLUTX,CLUTY), 0);
+            CLUTTexel = texelFetch(paletteTexture, ivec2(CLUTX,CLUTY), 0);
         }
         if( InternalToPsxColor(CLUTTexel) == 0x0000u) {
             discard;
         }
 
-        if( LightingEnabled > 0.5 ) {
-            CLUTTexel.r = clamp(CLUTTexel.r * ourColor.r * 2.f, 0.f, 1.f);
-            CLUTTexel.g = clamp(CLUTTexel.g * ourColor.g * 2.f, 0.f, 1.f);
-            CLUTTexel.b = clamp(CLUTTexel.b * ourColor.b * 2.f, 0.f, 1.f);
+        if( lightingEnabled > 0.5 ) {
+            CLUTTexel.r = clamp(CLUTTexel.r * color.r * 2.f, 0.f, 1.f);
+            CLUTTexel.g = clamp(CLUTTexel.g * color.g * 2.f, 0.f, 1.f);
+            CLUTTexel.b = clamp(CLUTTexel.b * color.b * 2.f, 0.f, 1.f);
         }
     } else {
-        CLUTTexel = vec4(ourColor.rgb,1);
+        CLUTTexel = vec4(color.rgb,1);
     }
-//     if( FogEnabled > 0.5 ) {
-//         FogMin = (ourFogNear / 4096.f) * 20.f;
-//         InterpolationFactor = 1.0 - clamp((FogMax - FogFactor) / (FogMax - FogMin), 0.0, 1.0);
-//         CLUTTexel = mix(CLUTTexel, vec4(ourFogColor,1.0), InterpolationFactor);
-//     }
-    
-    FragColor = vec4(CLUTTexel.rgb,1);
+
+    fragColor = vec4(CLUTTexel.rgb,1);
 }

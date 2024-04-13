@@ -38,8 +38,8 @@ typedef struct VAO_s
 
 // 3D
 VAO_t *VAOInitXYZUVRGB(float *Data,int DataSize,int Stride,int VertexOffset,int TextureOffset,int ColorOffset,int Count);
-VAO_t *VAOInitXYZUVRGBCLUTColorModeInteger(int *Data,int DataSize,int Stride,int VertexOffset,int TextureOffset,int ColorOffset,int CLUTOffset,
-                                           int ColorModeOffset,int Count);
+VAO_t *VAOInitXYZUVRGBCLUTColorModeTexturedInteger(int *Data,int DataSize,int Stride,int VertexOffset,int TextureOffset,int ColorOffset,int CLUTOffset,
+                                           int ColorModeOffset,int TexturedOffset,int Count);
 VAO_t *VAOInitXYZUV(float *Data,int DataSize,int Stride,int VertexOffset,int TextureOffset,int Count);
 VAO_t *VAOInitXYZRGB(float *Data,int DataSize,int Stride,int VertexOffset,int ColorOffset,int DynamicDraw);
 VAO_t *VAOInitXYZ(float *Data,int DataSize,int Stride,int VertexOffset,int Count);

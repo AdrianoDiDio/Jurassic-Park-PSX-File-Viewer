@@ -65,11 +65,7 @@ typedef struct BSDUv2_s {
 
 typedef struct RenderObjectShader_s {
     int             MVPMatrixId;
-    int             MVMatrixId;
     int             EnableLightingId;
-    int             EnableFogId;
-    int             FogNearId;
-    int             FogColorId;
     int             PaletteTextureId;
     int             TextureIndexId;
     Shader_t        *Shader;
@@ -211,39 +207,54 @@ typedef struct BSDEntryTable_s {
 
 typedef struct BSDFaceGT3Packet_s
 {
-	unsigned int Tag;
-	Byte	r0, g0, b0, code;
-	short	x0, 	y0;
-	BSDUv_t	UV0;	unsigned short	CBA;
-	Byte	r1, g1, b1, p1;
-	short	x1,	y1;
-	BSDUv_t	UV1;	unsigned short	TexInfo;
-	Byte	r2, g2, b2, p2;
-	short	x2,	y2;
-	BSDUv_t	UV2;	unsigned short	pad2;
+    unsigned int       Tag;
+    BSDColor_t         RGB0;
+    short              X0;
+    short              Y0;
+    BSDUv_t            UV0;
+    unsigned short     CBA;
+    BSDColor_t         RGB1;
+    short              X1;
+    short              Y1;
+    BSDUv_t            UV1;
+    unsigned short     TexInfo;
+    BSDColor_t         RGB2;
+    short              X2;
+    short              Y2;
+    BSDUv_t            UV2;
+    unsigned short     Pad1;
 } BSDFaceGT3Packet_t;
 
 typedef struct BSDFaceG3Packet_s {
-	unsigned int Tag;
-	Byte	r0, g0, b0, code;
-	short	x0, 	y0;
-	Byte	r1, g1, b1, p1;
-	short	x1,	y1;
-	Byte	r2, g2, b2, p2;
-	short	x2,	y2;
+    unsigned int       Tag;
+    BSDColor_t         RGB0;
+    short              X0;
+    short              Y0;
+    BSDColor_t         RGB1;
+    short              X1;
+    short              Y1;
+    BSDColor_t         RGB2;
+    short              X2;
+    short              Y2;
 } BSDFaceG3Packet_t;
 
 typedef struct BSDFaceFT3Packet_s
 {
-	unsigned int Tag;
-	Byte	r0, g0, b0, code;
-	short	x0, 	y0;
-	BSDUv_t	UV0;	unsigned short	CBA;
-	short	x1,	y1;
-	BSDUv_t UV1;	unsigned short	TexInfo;
-	short	x2,	y2;
-	BSDUv_t UV2;	unsigned short	pad1;
-} BSDFaceFT3Packet_t;	
+    unsigned int       Tag;
+    BSDColor_t         RGB0;
+    short              X0;
+    short              Y0;
+    BSDUv_t            UV0;
+    unsigned short     CBA;
+    short              X1;
+    short              Y1;
+    BSDUv_t            UV1;
+    unsigned short     TexInfo;
+    short              X2;
+    short              Y2;
+    BSDUv_t            UV2;
+    unsigned short     Pad1;
+} BSDFaceFT3Packet_t;
 
 typedef struct BSDFace_s {
     BSDUv_t        UV0;
@@ -259,7 +270,6 @@ typedef struct BSDFace_s {
     unsigned int    Vert0;
     unsigned int    Vert1;
     unsigned int    Vert2;
-    bool            IsTextured;
 
 } BSDFace_t;
 

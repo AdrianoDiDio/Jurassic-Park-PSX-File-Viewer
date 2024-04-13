@@ -268,7 +268,7 @@ void BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FIL
     }
 }
 
-void BSDFillFaceVertexBuffer(int *Buffer,int *BufferSize,BSDVertex_t Vertex,int U0,int V0,BSDColor_t Color,int CLUTX,int CLUTY,int ColorMode)
+void BSDFillFaceVertexBuffer(int *Buffer,int *BufferSize,BSDVertex_t Vertex,int U0,int V0,BSDColor_t Color,int CLUTX,int CLUTY,int ColorMode,bool Textured)
 {
     if( !Buffer ) {
         DPrintf("BSDFillFaceVertexBuffer:Invalid Buffer\n");
@@ -289,7 +289,8 @@ void BSDFillFaceVertexBuffer(int *Buffer,int *BufferSize,BSDVertex_t Vertex,int 
     Buffer[*BufferSize+8] = CLUTX;
     Buffer[*BufferSize+9] = CLUTY;
     Buffer[*BufferSize+10] = ColorMode;
-    *BufferSize += 11;
+    Buffer[*BufferSize+11] = Textured;
+    *BufferSize += 12;
 }
 void BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject)
 {
@@ -299,6 +300,7 @@ void BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject)
     int ColorOffset;
     int CLUTOffset;
     int ColorModeOffset;
+    int TexturedOffset;
     int Stride;
     int *VertexData;
     int VertexSize;
@@ -322,14 +324,15 @@ void BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject)
         DPrintf("BSDRenderObjectGenerateVAO:Invalid RenderObject\n");
         return;
     }
-    //        XYZ UV RGB CLUT ColorMode
-    Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
+//            XYZ UV RGB CLUT ColorMode Textured
+    Stride = (3 + 2 + 3 + 2 + 1 + 1) * sizeof(int);
                 
     VertexOffset = 0;
     TextureOffset = 3;
     ColorOffset = 5;
     CLUTOffset = 8;
     ColorModeOffset = 10;
+    TexturedOffset = 11;
     
     VertexSize = Stride * 3 * RenderObject->NumFaces;
     VertexData = malloc(VertexSize);
@@ -356,19 +359,19 @@ void BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject)
         
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->CurrentVertexTable[CurrentFace->VertexTableIndex0&0x1F].VertexList[CurrentFace->VertexTableDataIndex0],
-                                U0,V0,CurrentFace->RGB0,CLUTDestX,CLUTDestY,ColorMode
+                                U0,V0,CurrentFace->RGB0,CLUTDestX,CLUTDestY,ColorMode,true
                                );
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->CurrentVertexTable[CurrentFace->VertexTableIndex1&0x1F].VertexList[CurrentFace->VertexTableDataIndex1],
-                                U1,V1,CurrentFace->RGB1,CLUTDestX,CLUTDestY,ColorMode
+                                U1,V1,CurrentFace->RGB1,CLUTDestX,CLUTDestY,ColorMode,true
                                );
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->CurrentVertexTable[CurrentFace->VertexTableIndex2&0x1F].VertexList[CurrentFace->VertexTableDataIndex2],
-                                U2,V2,CurrentFace->RGB2,CLUTDestX,CLUTDestY,ColorMode
+                                U2,V2,CurrentFace->RGB2,CLUTDestX,CLUTDestY,ColorMode,true
                                );
     }
-    RenderObject->VAO = VAOInitXYZUVRGBCLUTColorModeInteger(VertexData,VertexSize,Stride,VertexOffset,TextureOffset,
-                                        ColorOffset,CLUTOffset,ColorModeOffset,RenderObject->NumFaces * 3);
+    RenderObject->VAO = VAOInitXYZUVRGBCLUTColorModeTexturedInteger(VertexData,VertexSize,Stride,VertexOffset,TextureOffset,
+                                        ColorOffset,CLUTOffset,ColorModeOffset,TexturedOffset,RenderObject->NumFaces * 3);
     free(VertexData);
 }
 void BSDRenderObjectGenerateStaticTexturedVAO(BSDRenderObject_t *RenderObject)
@@ -386,6 +389,7 @@ void BSDRenderObjectGenerateStaticTexturedVAO(BSDRenderObject_t *RenderObject)
     int ColorOffset;
     int CLUTOffset;
     int ColorModeOffset;
+    int TexturedOffset;
     int U0;
     int V0;
     int U1;
@@ -404,8 +408,8 @@ void BSDRenderObjectGenerateStaticTexturedVAO(BSDRenderObject_t *RenderObject)
     if( !RenderObject->NumTexturedFaces ) {
         return;
     }
-//            XYZ UV RGB CLUT ColorMode
-    Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
+//            XYZ UV RGB CLUT ColorMode Textured
+    Stride = (3 + 2 + 3 + 2 + 1 + 1) * sizeof(int);
     VertexSize = Stride * 3 * RenderObject->NumTexturedFaces;
     VertexData = malloc(VertexSize);
     VertexPointer = 0;
@@ -414,6 +418,7 @@ void BSDRenderObjectGenerateStaticTexturedVAO(BSDRenderObject_t *RenderObject)
     ColorOffset = 5;
     CLUTOffset = 8;
     ColorModeOffset = 10;
+    TexturedOffset = 11;
 
     for( i = 0; i < RenderObject->NumTexturedFaces; i++ ) {
 
@@ -422,9 +427,7 @@ void BSDRenderObjectGenerateStaticTexturedVAO(BSDRenderObject_t *RenderObject)
         Vert2 = RenderObject->TexturedFaceList[i].Vert2;
 
         VRAMPage = RenderObject->TexturedFaceList[i].TexInfo & 0x1F;
-        //HACK(Adriano):Just to test if everything is working we need to skip this faces from the normal pipeline in order
-        //to not discard them
-        ColorMode = RenderObject->TexturedFaceList[i].IsTextured ? (RenderObject->TexturedFaceList[i].TexInfo & 0xC0) >> 7 : 50;
+        ColorMode = (RenderObject->TexturedFaceList[i].TexInfo & 0xC0) >> 7;
         U0 = RenderObject->TexturedFaceList[i].UV0.u + VRAMGetTexturePageX(VRAMPage);
         V0 = RenderObject->TexturedFaceList[i].UV0.v + VRAMGetTexturePageY(VRAMPage,ColorMode);
         U1 = RenderObject->TexturedFaceList[i].UV1.u + VRAMGetTexturePageX(VRAMPage);
@@ -440,17 +443,17 @@ void BSDRenderObjectGenerateStaticTexturedVAO(BSDRenderObject_t *RenderObject)
 
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->Vertex[Vert0],
-                                U0,V0,RenderObject->TexturedFaceList[i].RGB0,CLUTDestX,CLUTDestY,ColorMode);
+                                U0,V0,RenderObject->TexturedFaceList[i].RGB0,CLUTDestX,CLUTDestY,ColorMode,true);
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->Vertex[Vert1],
-                                U1,V1,RenderObject->TexturedFaceList[i].RGB1,CLUTDestX,CLUTDestY,ColorMode);
+                                U1,V1,RenderObject->TexturedFaceList[i].RGB1,CLUTDestX,CLUTDestY,ColorMode,true);
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->Vertex[Vert2],
-                                U2,V2,RenderObject->TexturedFaceList[i].RGB2,CLUTDestX,CLUTDestY,ColorMode);
+                                U2,V2,RenderObject->TexturedFaceList[i].RGB2,CLUTDestX,CLUTDestY,ColorMode,true);
     }
     VAO = 
-        VAOInitXYZUVRGBCLUTColorModeInteger(VertexData,VertexSize,Stride,VertexOffset,TextureOffset,ColorOffset,CLUTOffset,ColorModeOffset,
-                                              RenderObject->NumTexturedFaces * 3);
+        VAOInitXYZUVRGBCLUTColorModeTexturedInteger(VertexData,VertexSize,Stride,VertexOffset,TextureOffset,ColorOffset,CLUTOffset,ColorModeOffset,
+                                              TexturedOffset,RenderObject->NumTexturedFaces * 3);
     VAO->Next = RenderObject->VAO;
     RenderObject->VAO = VAO;
     free(VertexData);
@@ -470,14 +473,14 @@ void BSDRenderObjectGenerateStaticUntexturedVAO(BSDRenderObject_t *RenderObject)
     int ColorOffset;
     int CLUTOffset;
     int ColorModeOffset;
-    int ColorMode;
+    int TexturedOffset;
     int i;
     
     if( !RenderObject->NumUntexturedFaces ) {
         return;
     }
-//            XYZ UV RGB CLUT ColorMode
-    Stride = (3 + 2 + 3 + 2 + 1) * sizeof(int);
+//            XYZ UV RGB CLUT ColorMode Textured
+    Stride = (3 + 2 + 3 + 2 + 1 + 1) * sizeof(int);
     VertexSize = Stride * 3 * RenderObject->NumUntexturedFaces;
     VertexData = malloc(VertexSize);
     VertexPointer = 0;
@@ -486,28 +489,28 @@ void BSDRenderObjectGenerateStaticUntexturedVAO(BSDRenderObject_t *RenderObject)
     ColorOffset = 5;
     CLUTOffset = 8;
     ColorModeOffset = 10;
+    TexturedOffset = 11;
 
     for( i = 0; i < RenderObject->NumUntexturedFaces; i++ ) {
-        ColorMode = RenderObject->UntexturedFaceList[i].IsTextured ? (RenderObject->UntexturedFaceList[i].TexInfo & 0xC0) >> 7 : 50;
         Vert0 = RenderObject->UntexturedFaceList[i].Vert0;
         Vert1 = RenderObject->UntexturedFaceList[i].Vert1;
         Vert2 = RenderObject->UntexturedFaceList[i].Vert2;
 
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->Vertex[Vert0],
-                                0,0,RenderObject->UntexturedFaceList[i].RGB0,0,0,ColorMode);
+                                0,0,RenderObject->UntexturedFaceList[i].RGB0,0,0,0,false);
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->Vertex[Vert1],
-                                0,0,RenderObject->UntexturedFaceList[i].RGB1,0,0,ColorMode);
+                                0,0,RenderObject->UntexturedFaceList[i].RGB1,0,0,0,false);
         BSDFillFaceVertexBuffer(VertexData,&VertexPointer,
                                 RenderObject->Vertex[Vert2],
-                                0,0,RenderObject->UntexturedFaceList[i].RGB2,0,0,ColorMode);
+                                0,0,RenderObject->UntexturedFaceList[i].RGB2,0,0,0,false);
 
 
     }
     VAO = 
-        VAOInitXYZUVRGBCLUTColorModeInteger(VertexData,VertexSize,Stride,VertexOffset,TextureOffset,ColorOffset,CLUTOffset,ColorModeOffset,
-                                              RenderObject->NumUntexturedFaces * 3);
+        VAOInitXYZUVRGBCLUTColorModeTexturedInteger(VertexData,VertexSize,Stride,VertexOffset,TextureOffset,ColorOffset,CLUTOffset,ColorModeOffset,
+                                              TexturedOffset,RenderObject->NumUntexturedFaces * 3);
     VAO->Next = RenderObject->VAO;
     RenderObject->VAO = VAO;
     free(VertexData);
@@ -756,12 +759,11 @@ int BSDRenderObjectSetAnimationPose(BSDRenderObject_t *RenderObject,int Animatio
     }
     return 1;
 }
-//TODO(Adriano):Use this shader as the default for all the renderobjects (including TSP).
-//     Only when using TSP, enable fog by setting the uniform to true.
+
 int BSDCreateRenderObjectShader(BSDRenderObject_t *RenderObject)
 {
     Shader_t *Shader;
-    vec4 ClearColor;
+
     if( !RenderObject ) {
         DPrintf("BSDCreateRenderObjectShader:Invalid RenderObject\n");
         return 0;
@@ -779,20 +781,12 @@ int BSDCreateRenderObjectShader(BSDRenderObject_t *RenderObject)
     RenderObject->RenderObjectShader->Shader = Shader;
     glUseProgram(RenderObject->RenderObjectShader->Shader->ProgramId);
     RenderObject->RenderObjectShader->MVPMatrixId = glGetUniformLocation(Shader->ProgramId,"MVPMatrix");
-    RenderObject->RenderObjectShader->MVMatrixId = glGetUniformLocation(Shader->ProgramId,"MVMatrix");
-    RenderObject->RenderObjectShader->EnableLightingId = glGetUniformLocation(Shader->ProgramId,"EnableLighting");
-    RenderObject->RenderObjectShader->PaletteTextureId = glGetUniformLocation(Shader->ProgramId,"ourPaletteTexture");
-    RenderObject->RenderObjectShader->TextureIndexId = glGetUniformLocation(Shader->ProgramId,"ourIndexTexture");
-    RenderObject->RenderObjectShader->EnableFogId = glGetUniformLocation(Shader->ProgramId,"EnableFog");
-    RenderObject->RenderObjectShader->FogNearId = glGetUniformLocation(Shader->ProgramId,"FogNear");
-    RenderObject->RenderObjectShader->FogColorId = glGetUniformLocation(Shader->ProgramId,"FogColor");
+    RenderObject->RenderObjectShader->EnableLightingId = glGetUniformLocation(Shader->ProgramId,"enableLighting");
+    RenderObject->RenderObjectShader->TextureIndexId = glGetUniformLocation(Shader->ProgramId,"indexTexture");
+    RenderObject->RenderObjectShader->PaletteTextureId = glGetUniformLocation(Shader->ProgramId,"paletteTexture");
     glUniform1i(RenderObject->RenderObjectShader->TextureIndexId, 0);
     glUniform1i(RenderObject->RenderObjectShader->PaletteTextureId,  1);
     glUniform1i(RenderObject->RenderObjectShader->EnableLightingId, 1);
-    glUniform1i(RenderObject->RenderObjectShader->EnableFogId, 0);
-    glUniform1f(RenderObject->RenderObjectShader->FogNearId, 0);
-    glGetFloatv(GL_COLOR_CLEAR_VALUE, ClearColor);
-    glUniform3fv(RenderObject->RenderObjectShader->FogColorId, 1, ClearColor);
     glUseProgram(0);
     return 1;
 }
@@ -804,38 +798,28 @@ void BSDRenderObjectGenerateVAOs(BSDRenderObject_t *RenderObject)
 }
 void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *Camera,mat4 ProjectionMatrix)
 {
-    int EnableLightingId;
-    int PaletteTextureId;
-    int TextureIndexId;
-    int MVPMatrixId;
     vec3 Temp;
     mat4 ModelMatrix;
     mat4 ModelViewMatrix;
     mat4 MVPMatrix;
-    Shader_t *Shader;
     VAO_t *Iterator;
     
     if( !RenderObject ) {
         return;
     }
     
+    if( !RenderObject->RenderObjectShader ) {
+        BSDCreateRenderObjectShader(RenderObject);
+    }
+    
     if( RenderObject->TSP ) {
-        if( !RenderObject->RenderObjectShader ) {
-            BSDCreateRenderObjectShader(RenderObject);
-        }
         TSPDrawList(RenderObject->TSP,VRAM,Camera,RenderObject->RenderObjectShader,ProjectionMatrix);
         return;
     }
     if( !RenderObject->VAO ) {
         BSDRenderObjectGenerateVAOs(RenderObject);
     }
-    
-    Shader = ShaderCache("BSDRenderObjectShader","Shaders/BSDRenderObjectVertexShader.glsl",
-                         "Shaders/BSDRenderObjectFragmentShader.glsl");
-    if( !Shader ) {
-        return;
-    }
-    
+        
     if( EnableWireFrameMode->IValue ) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else {
@@ -858,16 +842,11 @@ void BSDDrawRenderObject(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,Camera_t *
     glm_mat4_mul(ProjectionMatrix,ModelViewMatrix,MVPMatrix);
     //Emulate PSX Coordinate system...
     glm_rotate_x(MVPMatrix,glm_rad(180.f), MVPMatrix);
+        
+    glUseProgram(RenderObject->RenderObjectShader->Shader->ProgramId);
+    glUniform1i(RenderObject->RenderObjectShader->EnableLightingId, EnableAmbientLight->IValue);
+    glUniformMatrix4fv(RenderObject->RenderObjectShader->MVPMatrixId,1,false,&MVPMatrix[0][0]);
     
-    glUseProgram(Shader->ProgramId);
-    MVPMatrixId = glGetUniformLocation(Shader->ProgramId,"MVPMatrix");
-    glUniformMatrix4fv(MVPMatrixId,1,false,&MVPMatrix[0][0]);
-    EnableLightingId = glGetUniformLocation(Shader->ProgramId,"EnableLighting");
-    PaletteTextureId = glGetUniformLocation(Shader->ProgramId,"ourPaletteTexture");
-    TextureIndexId = glGetUniformLocation(Shader->ProgramId,"ourIndexTexture");
-    glUniform1i(TextureIndexId, 0);
-    glUniform1i(PaletteTextureId,  1);
-    glUniform1i(EnableLightingId, EnableAmbientLight->IValue);
     glActiveTexture(GL_TEXTURE0 + 0);
     glBindTexture(GL_TEXTURE_2D, VRAM->TextureIndexPage.TextureId);
     glActiveTexture(GL_TEXTURE0 + 1);
@@ -902,59 +881,6 @@ void BSDDrawRenderObjectList(BSDRenderObject_t *RenderObjectList,VRAM_t *VRAM,Ca
         BSDDrawRenderObject(Iterator,VRAM,Camera,ProjectionMatrix);
         i++;
     }
-}
-/*
-  NOTE(Adriano):
-  Since this tool is used to load BSD files without specifying any information about the game and since we
-  are not loading the TSP files we don't have any idea of what kind of game this BSD belongs to.
-  This causes issues due to the way RenderObject are stored since their size could be 256 if the game is MOH or
-  276 if the game is MOH:Underground.
-  In order to gain this information we need to find the start and end position of the RenderObject's data.
-  RenderObjects usually starts at 1444 (3492 with the header) with an integer that tells how many RenderObject we have to load.
-  Since MOH:Underground uses a slightly different offset we need to check if the value is not valid (either 0 or too big) and move the position
-  to 1360 (3508 with the header).
-  This could be enough to determine what version we are running but just to be on the safe side we also calculate the ending position by using
-  the node table entry and color table to determine the end address of the RenderObject list.
-  By subtracting the end and start position and dividing by the number of RenderObjects we find the actual size used.
- */
-int BSDGetRenderObjectSize(BSD_t *BSD,FILE *BSDFile)
-{
-    int NumAnimatedLights;
-    int NumColors;
-    int NumRenderObjects;
-    int StartRenderObjectDataOffset;
-    int EndRenderObjectDataOffset;
-    int AnimatedLightColorSectionSize;
-    int i;
-    
-    if( !BSD || !BSDFile ) {
-        bool InvalidFile = (BSDFile == NULL ? true : false);
-        printf("BSDGetRenderObjectSize: Invalid %s\n",InvalidFile ? "file" : "BSD struct");
-        return 0;
-    }
-    fseek(BSDFile,BSD_ANIMATED_LIGHTS_FILE_POSITION + BSD_HEADER_SIZE, SEEK_SET);
-    fread(&NumAnimatedLights,sizeof(NumAnimatedLights),1,BSDFile);
-    AnimatedLightColorSectionSize = 0;
-    if( NumAnimatedLights != 0 ) {
-        for( i = 0; i < BSD_ANIMATED_LIGHTS_TABLE_SIZE; i++ ) {
-            fread(&NumColors,sizeof(NumColors),1,BSDFile);
-            fseek(BSDFile,16,SEEK_CUR);
-            AnimatedLightColorSectionSize += NumColors * 4;
-        }
-    }
-    fseek(BSDFile,BSD_RENDER_OBJECT_STARTING_OFFSET + BSD_HEADER_SIZE,SEEK_SET);
-    fread(&NumRenderObjects,sizeof(NumRenderObjects),1,BSDFile);
-    if( NumRenderObjects == 0 || NumRenderObjects > 1000 ) {
-        //HACK HACK HACK:MOH:Underground stores it at a different offset...
-        //NOTE(Adriano):By now, if we hit this branch we know that this file belongs to MOH:Underground...
-        fseek(BSDFile,BSD_RENDER_OBJECT_STARTING_OFFSET + 16 + BSD_HEADER_SIZE,SEEK_SET);
-        fread(&NumRenderObjects,sizeof(NumRenderObjects),1,BSDFile);
-    }
-    DPrintf("BSDGetRenderObjectSize:We have %i RenderObjects\n",NumRenderObjects);
-    StartRenderObjectDataOffset = ftell(BSDFile);
-    EndRenderObjectDataOffset = (BSD->EntryTable.NodeTableOffset  - AnimatedLightColorSectionSize) + BSD_HEADER_SIZE;
-    assert(NumRenderObjects > 0);
-    return ( EndRenderObjectDataOffset - StartRenderObjectDataOffset ) / NumRenderObjects;
 }
 
 int BSDReadEntryTableChunk(BSD_t *BSD,FILE *BSDFile)
@@ -1578,6 +1504,12 @@ void DecodeVertexData(int EncodedVertex,unsigned int *OutVertexIndex1,unsigned i
         *OutVertexIndex3 = (EncodedVertex & 0xFF00000 ) >> 20;
     }
 }
+void BSDMapColorFrom127To255(BSDColor_t *InColor,BSDColor_t *OutColor)
+{
+    OutColor->r = (InColor->r / 127) * 255;
+    OutColor->g = (InColor->g / 127) * 255;
+    OutColor->b = (InColor->b / 127) * 255;
+}
 void BSDFaceGT3PacketToBSDFace(BSDFace_t *Face,BSDFaceGT3Packet_t Packet)
 {
         Face->TexInfo = Packet.TexInfo;
@@ -1586,17 +1518,9 @@ void BSDFaceGT3PacketToBSDFace(BSDFace_t *Face,BSDFaceGT3Packet_t Packet)
         Face->UV1 = Packet.UV1;
         Face->UV2 = Packet.UV2;
         
-        Face->RGB0.r = Packet.r0;
-        Face->RGB0.g = Packet.b0;
-        Face->RGB0.b = Packet.g0;
-        
-        Face->RGB1.r = Packet.r1;
-        Face->RGB1.g = Packet.g1;
-        Face->RGB1.b = Packet.b1;
-        
-        Face->RGB2.r = Packet.r2;
-        Face->RGB2.g = Packet.g2;
-        Face->RGB2.b = Packet.b2;
+        BSDMapColorFrom127To255(&Packet.RGB0,&Face->RGB0);
+        BSDMapColorFrom127To255(&Packet.RGB1,&Face->RGB1);
+        BSDMapColorFrom127To255(&Packet.RGB2,&Face->RGB2);
 }
 void BSDFaceFT3PacketToBSDFace(BSDFace_t *Face,BSDFaceFT3Packet_t Packet)
 {
@@ -1606,32 +1530,16 @@ void BSDFaceFT3PacketToBSDFace(BSDFace_t *Face,BSDFaceFT3Packet_t Packet)
         Face->UV1 = Packet.UV1;
         Face->UV2 = Packet.UV2;
         
-        Face->RGB0.r = Packet.r0;
-        Face->RGB0.g = Packet.b0;
-        Face->RGB0.b = Packet.g0;
-        
-        Face->RGB1.r = Packet.r0;
-        Face->RGB1.g = Packet.g0;
-        Face->RGB1.b = Packet.b0;
-        
-        Face->RGB2.r = Packet.r0;
-        Face->RGB2.g = Packet.g0;
-        Face->RGB2.b = Packet.b0;
+        BSDMapColorFrom127To255(&Packet.RGB0,&Face->RGB0);
+        BSDMapColorFrom127To255(&Packet.RGB0,&Face->RGB1);
+        BSDMapColorFrom127To255(&Packet.RGB0,&Face->RGB2);
 }
 
 void BSDFaceG3PacketToBSDFace(BSDFace_t *Face,BSDFaceG3Packet_t Packet)
 {        
-        Face->RGB0.r = Packet.r0;
-        Face->RGB0.g = Packet.b0;
-        Face->RGB0.b = Packet.g0;
-        
-        Face->RGB1.r = Packet.r1;
-        Face->RGB1.g = Packet.g1;
-        Face->RGB1.b = Packet.b1;
-        
-        Face->RGB2.r = Packet.r2;
-        Face->RGB2.g = Packet.g2;
-        Face->RGB2.b = Packet.b2;
+        BSDMapColorFrom127To255(&Packet.RGB0,&Face->RGB0);
+        BSDMapColorFrom127To255(&Packet.RGB1,&Face->RGB1);
+        BSDMapColorFrom127To255(&Packet.RGB2,&Face->RGB2);
 }
 /*
  * Parse the Textured face data at the given offset, UseFTPacket can be enabled to parse faces that do not requires a different color per vertex
@@ -1721,7 +1629,6 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
         RenderObject->TexturedFaceList[i].Vert0 = Vert0;
         RenderObject->TexturedFaceList[i].Vert1 = Vert1;
         RenderObject->TexturedFaceList[i].Vert2 = Vert2;
-        RenderObject->TexturedFaceList[i].IsTextured = true;
         DPrintf("V0|V1|V2:(%i;%i;%i)|(%i;%i;%i)|(%i;%i;%i)\n",
                 RenderObject->Vertex[Vert0].x,RenderObject->Vertex[Vert0].y,RenderObject->Vertex[Vert0].z,
                 RenderObject->Vertex[Vert1].x,RenderObject->Vertex[Vert1].y,RenderObject->Vertex[Vert1].z,
@@ -1800,7 +1707,6 @@ int BSDParseRenderObjectUntexturedFaceData(BSDRenderObject_t *RenderObject,BSDRe
         RenderObject->UntexturedFaceList[i].Vert0 = Vert0;
         RenderObject->UntexturedFaceList[i].Vert1 = Vert1;
         RenderObject->UntexturedFaceList[i].Vert2 = Vert2;
-        RenderObject->UntexturedFaceList[i].IsTextured = false;
         DPrintf("V0|V1|V2:(%i;%i;%i)|(%i;%i;%i)|(%i;%i;%i)\n",
                 RenderObject->Vertex[Vert0].x,RenderObject->Vertex[Vert0].y,RenderObject->Vertex[Vert0].z,
                 RenderObject->Vertex[Vert1].x,RenderObject->Vertex[Vert1].y,RenderObject->Vertex[Vert1].z,

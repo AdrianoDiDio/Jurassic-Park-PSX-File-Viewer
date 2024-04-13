@@ -1,40 +1,27 @@
 #version 330 core
-layout (location = 0) in ivec3 aPos;
-layout (location = 1) in ivec2 aTexCoord;
-layout (location = 2) in ivec3 aColor;
-layout (location = 3) in ivec2 aCLUTCoord;
-layout (location = 4) in int   aColorMode;
+layout (location = 0) in ivec3 inPos;
+layout (location = 1) in ivec2 inTexCoord;
+layout (location = 2) in ivec3 inColor;
+layout (location = 3) in ivec2 inCLUTCoord;
+layout (location = 4) in int   inColorMode;
+layout (location = 5) in int   inTextured;
 
 uniform mat4 MVPMatrix;
-uniform mat4 MVMatrix;
-uniform bool EnableLighting;
-uniform bool EnableFog;
-uniform int ColorMode;
-uniform vec3 FogColor;
-uniform float FogNear;
-out vec3 ourColor;
-out vec2 TexCoord;
-out float LightingEnabled;
-out float FogEnabled;
-out float FogFactor;
-out vec3 ourFogColor;
-out float ourFogNear;
+uniform bool enableLighting;
+out vec3 color;
+out vec2 texCoord;
+out float lightingEnabled;
 out vec2 CLUTCoord;
-flat out int ourColorMode;
+flat out int colorMode;
+flat out int textured;
 
 void main()
 {
-    vec4 EyeSpacePosition;
-    gl_Position =  MVPMatrix * vec4(aPos, 1.0);
-    EyeSpacePosition = MVMatrix * vec4(aPos, 1.0);
-    FogFactor = abs(EyeSpacePosition.z / EyeSpacePosition.w);
-
-    ourColor = vec3(aColor) / 255.f;
-    TexCoord = vec2(aTexCoord) + vec2(0.001, 0.001);
-    LightingEnabled = EnableLighting ? 1.0 : 0.0;
-    FogEnabled = EnableFog ? 1.0 : 0.0;
-    CLUTCoord = vec2(aCLUTCoord) + vec2(0.001, 0.001);
-    ourColorMode = aColorMode;
-    ourFogColor = FogColor;
-    ourFogNear = FogNear;
+    gl_Position =  MVPMatrix * vec4(inPos, 1.0);
+    color = vec3(inColor) / 255.f;
+    texCoord = vec2(inTexCoord) + vec2(0.001, 0.001);
+    lightingEnabled = enableLighting ? 1.0 : 0.0;
+    CLUTCoord = vec2(inCLUTCoord) + vec2(0.001, 0.001);
+    colorMode = inColorMode;
+    textured = inTextured;
 }
