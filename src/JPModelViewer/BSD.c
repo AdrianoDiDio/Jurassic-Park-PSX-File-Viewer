@@ -1648,6 +1648,8 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
     int            FaceListSize;
     int            i;
     int            NumTexturedFaces;
+    int            BaseIndex;
+    BSDFace_t      *TempFaceList;
     BSDFaceGT3Packet_t FaceData[2];
     BSDFaceFT3Packet_t FlatFaceData[2];
 
@@ -1662,25 +1664,31 @@ int BSDParseRenderObjectTexturedFaceData(BSDRenderObject_t *RenderObject,BSDRend
     }
     fseek(BSDFile,Offset + 2048,SEEK_SET);
     fread(&NumTexturedFaces,sizeof(int),1,BSDFile);
-    RenderObject->NumTexturedFaces += NumTexturedFaces;
-    DPrintf("BSDParseRenderObjectTexturedFaceData:Reading %i faces\n",RenderObject->NumTexturedFaces);
-    FaceListSize = RenderObject->NumTexturedFaces * sizeof(BSDFace_t);
+    DPrintf("BSDParseRenderObjectTexturedFaceData:Reading %i faces\n",NumTexturedFaces);
+    FaceListSize = (NumTexturedFaces + RenderObject->NumTexturedFaces) * sizeof(BSDFace_t);
     if( !RenderObject->TexturedFaceList ) {
         RenderObject->TexturedFaceList = malloc(FaceListSize);
     } else {
-        RenderObject->TexturedFaceList = realloc(RenderObject->TexturedFaceList,FaceListSize);
+        TempFaceList = realloc(RenderObject->TexturedFaceList,FaceListSize);
+        if( !TempFaceList ) {
+            DPrintf("BSDParseRenderObjectTexturedFaceData:Failed to re-allocate memory for face array\n");
+            return 0;
+        }
+        RenderObject->TexturedFaceList = TempFaceList;
     }
-    
     if( !RenderObject->TexturedFaceList ) {
         DPrintf("BSDParseRenderObjectTexturedFaceData:Failed to allocate memory for face array\n");
         return 0;
     }
-    //NOTE(Adriano):If we expanded our array then the number of faces will always be greater than the one read from the file
-    if( RenderObject->NumTexturedFaces == NumTexturedFaces ) {
+    if( RenderObject->NumTexturedFaces == 0 ) {
         memset(RenderObject->TexturedFaceList,0,FaceListSize);
+        BaseIndex = 0;
+    } else {
+        BaseIndex = RenderObject->NumTexturedFaces;
     }
+    RenderObject->NumTexturedFaces += NumTexturedFaces;
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
-    for( i = 0; i < NumTexturedFaces; i++ ) {
+    for( i = BaseIndex; i < BaseIndex + NumTexturedFaces; i++ ) {
         DPrintf("BSDParseRenderObjectTexturedFaceData:Reading Face at %i (%i)\n",GetCurrentFilePosition(BSDFile),GetCurrentFilePosition(BSDFile) - 2048);
         DPrintf(" -- FACE %i --\n",i);
         if( UseFTPacket ) {
@@ -1735,6 +1743,8 @@ int BSDParseRenderObjectUntexturedFaceData(BSDRenderObject_t *RenderObject,BSDRe
     int            FaceListSize;
     int            i;
     int            NumUntexturedFaces;
+    int            BaseIndex;
+    BSDFace_t     *TempFaceList;
     BSDFaceG3Packet_t FaceData[2];
     if( !RenderObject ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Invalid RenderObject!\n");
@@ -1748,23 +1758,35 @@ int BSDParseRenderObjectUntexturedFaceData(BSDRenderObject_t *RenderObject,BSDRe
     fseek(BSDFile,Offset + 2048,SEEK_SET);
     fread(&NumUntexturedFaces,sizeof(int),1,BSDFile);
     DPrintf("BSDParseRenderObjectFaceData:Reading %i faces\n",NumUntexturedFaces);
-    RenderObject->NumUntexturedFaces += NumUntexturedFaces;
-    FaceListSize = RenderObject->NumUntexturedFaces * sizeof(BSDFace_t);
+    FaceListSize = (NumUntexturedFaces + RenderObject->NumUntexturedFaces) * sizeof(BSDFace_t);
     if( !RenderObject->UntexturedFaceList ) {
         RenderObject->UntexturedFaceList = malloc(FaceListSize);
+        if( !RenderObject->UntexturedFaceList ) {
+            DPrintf("BSDParseRenderObjectUnTexturedFaceData:Failed to allocate memory for face array\n");
+            return 0;
+        }
+        memset(RenderObject->UntexturedFaceList,0,FaceListSize);
     } else {
-        RenderObject->UntexturedFaceList = realloc(RenderObject->UntexturedFaceList,FaceListSize);
+        TempFaceList = realloc(RenderObject->UntexturedFaceList,FaceListSize);
+        if( !TempFaceList ) {
+            DPrintf("BSDParseRenderObjectUnTexturedFaceData:Failed to re-allocate memory for face array\n");
+            return 0;
+        }
+        RenderObject->UntexturedFaceList = TempFaceList;
     }
     if( !RenderObject->UntexturedFaceList ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Failed to allocate memory for face array\n");
         return 0;
     }
-    //NOTE(Adriano):If we expanded our array then the number of faces will always be greater than the one read from the file
-    if( RenderObject->NumUntexturedFaces == NumUntexturedFaces ) {
+    if( RenderObject->NumUntexturedFaces == 0 ) {
         memset(RenderObject->UntexturedFaceList,0,FaceListSize);
+        BaseIndex = 0;
+    } else {
+        BaseIndex = RenderObject->NumUntexturedFaces;
     }
+    RenderObject->NumUntexturedFaces += NumUntexturedFaces;
     int FirstFaceDef = GetCurrentFilePosition(BSDFile);
-    for( i = 0; i < NumUntexturedFaces; i++ ) {
+    for( i = BaseIndex; i < BaseIndex + NumUntexturedFaces; i++ ) {
         DPrintf("BSDParseRenderObjectUnTexturedFaceData:Reading Face at %i (%i)\n",GetCurrentFilePosition(BSDFile),GetCurrentFilePosition(BSDFile) - 2048);
         DPrintf(" -- FACE %i --\n",i);
         DPrintf("Reading a packet of size %li\n",sizeof(FaceData));
