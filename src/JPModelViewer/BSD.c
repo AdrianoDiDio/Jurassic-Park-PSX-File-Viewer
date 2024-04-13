@@ -242,11 +242,14 @@ void BSDRenderObjectExportFacesToPly(BSDRenderObject_t *RenderObject,BSDFace_t *
         fwrite(Buffer,strlen(Buffer),1,OutFile);
     }
 }
-void BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FILE *OutFile)
-{    
-    if( !RenderObject || !OutFile ) {
-        bool InvalidFile = (OutFile == NULL ? true : false);
-        DPrintf("BSDRenderObjectExportToPly: Invalid %s\n",InvalidFile ? "file" : "bsd struct");
+void BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,const char *Directory,char *BSDFileName)
+{
+    char *PlyFile;
+    char *FileName;
+    FILE *OutFile;
+    
+    if( !RenderObject ) {
+        DPrintf("BSDRenderObjectExportToPly: Invalid bsd struct\n");
         return;
     }
     
@@ -255,17 +258,28 @@ void BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FIL
         return;
     }
     if( RenderObject->TSP ) {
-        TSPDumpDataToPlyFile(RenderObject->TSP,VRAM,OutFile);
+        asprintf(&FileName,"RenderObject-%s-JP.ply",BSDFileName);
+    } else {
+        asprintf(&FileName,"RenderObject-%u-JP.ply",RenderObject->Id);
+    }
+    asprintf(&PlyFile,"%s%c%s",Directory,PATH_SEPARATOR,FileName);
+    OutFile = fopen(PlyFile,"w");
+    if( !OutFile ) {
+        DPrintf("RenderObjectManagerExportSelectedModelToPly:Failed to open %s for writing\n",PlyFile);
         return;
+    }
+    if( RenderObject->TSP ) {
+        TSPDumpDataToPlyFile(RenderObject->TSP,VRAM,OutFile);
     }
     if( RenderObject->NumTexturedFaces > 0 ) {
         BSDRenderObjectExportFacesToPly(RenderObject,RenderObject->TexturedFaceList,RenderObject->NumTexturedFaces,VRAM,OutFile);
-        return;
     }
     if( RenderObject->NumUntexturedFaces > 0 ) {
         BSDRenderObjectExportFacesToPly(RenderObject,RenderObject->UntexturedFaceList,RenderObject->NumUntexturedFaces,VRAM,OutFile);
-        return;
     }
+    fclose(OutFile);
+    free(FileName);
+    free(PlyFile);
 }
 
 void BSDFillFaceVertexBuffer(int *Buffer,int *BufferSize,BSDVertex_t Vertex,int U0,int V0,BSDColor_t Color,int CLUTX,int CLUTY,int ColorMode,bool Textured)

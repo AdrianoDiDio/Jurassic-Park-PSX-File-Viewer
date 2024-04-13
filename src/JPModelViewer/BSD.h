@@ -327,7 +327,7 @@ BSDAnimationFrame_t         *BSDRenderObjectGetCurrentFrame(BSDRenderObject_t *R
 void                        BSDRenderObjectResetFrameQuaternionList(BSDAnimationFrame_t *Frame);
 
 void                        BSDRenderObjectGenerateVAO(BSDRenderObject_t *RenderObject);
-void                        BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,FILE *OutFile);
+void                        BSDRenderObjectExportToPly(BSDRenderObject_t *RenderObject,VRAM_t *VRAM,const char *Directory,char *BSDFileName);
 void                        BSDFree(BSD_t *BSD);
 void                        BSDFreeRenderObjectList(BSDRenderObject_t *RenderObjectList);
 
