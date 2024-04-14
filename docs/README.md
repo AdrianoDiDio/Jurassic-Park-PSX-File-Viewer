@@ -24,6 +24,7 @@ Table of contents
       * [UV Coordinates](#uv-coordinates)
   + [BSD Files](#bsd-files)
     - [File Format](#file-format)
+      * [Animated Lights Block](#animated-lights-block)
       * [RenderObject Block](#renderobject-block)
         + [Color Mode](#color-mode)
         + [Texture Page](#texture-page)
@@ -272,17 +273,47 @@ probably contains a list of CD sectors that were required by the PSX in
 order to correctly read the file.  
 **Note that all the offset contained inside the file starts from 2048.**
 
-Right after the header the information about the corresponding TSP file is
-found if it is a level file otherwise it's replaced by zeroes.
+##### Animated Lights Block
+
+This block is found at position 64 (excluding the header) or 2112
+(including the header) and contains information about animated lights that
+can be used by the TSP file in order to render special effects like running
+water from a river,a blinking light etc...  
+Each animated lights is contained in a structure that has a fixed size of
+20 bytes:
+
+| Type | Size    | Description         |
+| ---- | ------- | ------------------- |
+| int  | 4 bytes | NumColors           |
+| int  | 4 bytes | StartingColorOffset |
+| int  | 4 bytes | ColorIndex          |
+| int  | 4 bytes | CurrentColor        |
+| int  | 4 bytes | Delay               |
+
+Every animated light has a number of colors that are loaded at the
+specified StartingColorOffset (to which you would add 4-bytes until all
+colors are read).  
+Each color is just a 4-byte integer that represents the 3 components (RGB)
+plus a constant value that it is used to restart the animation ( by setting
+the Delay value to this constant ).   
+Every frame the animated light structure is updated only if the Delay
+reaches zero, after which the ColorIndex is incremented wrapping around
+only when it reaches the maximum value represented by NumColors.  
+ColorIndex is used to select the current color that will be used by the
+surface during rendering time.    
+The list of colors can be actually found after the RenderObject block and
+it is not meant to be read sequentially but loaded when parsing this
+block.   
+
 
 ##### RenderObject Block
 
-At the offset 0x1D8 (472) after the header,we find the number of RenderObject stored as an int
-(4 bytes).  
-A RenderObject, as the name implies , are all the objects that can be rendered by the
-game (the main level, models, powerups etc...)
-Each RenderObject has a fixed size of 2124 bytes containing several fields that depending by the type of
-the RenderObject can be NULL or contains an offset to the data stored inside the BSD file.    
+At the offset 0x1D8 (472) after the header,we find the number of
+RenderObject stored as an int (4 bytes).  
+A RenderObject, as the name implies, are all the objects that can be
+rendered by the game (the main level, models, powerups etc...)  
+Each RenderObject has a fixed size of 2124 bytes containing several fields
+that, depending by the type of the RenderObject, can be NULL or contains an offset to the data stored inside the BSD file.    
 
 | Type           | Size     | Description                                                        |
 | -------------- | -------- | ------------------------------------------------------------------ |
@@ -310,8 +341,8 @@ the RenderObject can be NULL or contains an offset to the data stored inside the
 **NOTE that ScaleX/Y/Z Values must be divided by 16 and the value found is
 in fixed point format where 4096 is equal to 1.**
 
-Textured face data contains two identical data structure followed by the encoded
-vertex indices:  
+Textured face data contains two identical data structure followed by the
+encoded vertex indices:  
 
 | Type                  | Size    | Description                |
 | --------------------- | ------- | -------------------------- |

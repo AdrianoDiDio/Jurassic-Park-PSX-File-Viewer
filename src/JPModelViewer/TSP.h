@@ -80,14 +80,16 @@ typedef struct TSPRenderingFace_s {
 
 //16 Bytes.
 typedef struct TSPFace_s {
-    unsigned short V0;
-    unsigned short V1;
-    unsigned short V2;
-    TSPUv_t UV0;
-    unsigned short CBA;
-    TSPUv_t UV1;
-    unsigned short TSB;
-    TSPUv_t UV2;
+    unsigned short  V0;
+    unsigned short  V1;
+    unsigned short  V2;
+    TSPUv_t         UV0;
+    unsigned short  CBA;
+    TSPUv_t         UV1;
+    unsigned short  TSB;
+    TSPUv_t         UV2;
+    short           Pad;
+    bool            IsTextured;
 } TSPFace_t;
 
 //36 Bytes.

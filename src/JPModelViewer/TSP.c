@@ -595,11 +595,11 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
                     U2,V2);
         if( (TSB & 0x4000) != 0) {
             TSPFillFaceVertexBuffer(TransparentVertexData,&TransparentVertexPointer,TSP->Vertex[Vert0],
-                                   TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode,true);
+                                   TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode,Node->FaceList[i].IsTextured);
             TSPFillFaceVertexBuffer(TransparentVertexData,&TransparentVertexPointer,TSP->Vertex[Vert1],
-                                   TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode,true);
+                                   TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode,Node->FaceList[i].IsTextured);
             TSPFillFaceVertexBuffer(TransparentVertexData,&TransparentVertexPointer,TSP->Vertex[Vert2],
-                                   TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode,true);
+                                   TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode,Node->FaceList[i].IsTextured);
             RenderingFace->VAOBufferOffset = TSP->TransparentVAO->CurrentSize;
             RenderingFace->BlendingMode = (TSB >> 5 ) & 3;
             RenderingFace->Flags |= TSP_FX_TRANSPARENT_FACE;
@@ -610,11 +610,11 @@ void TSPCreateFaceVAO(TSP_t *TSP,TSPNode_t *Node)
             
         } else {
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert0],
-                                    TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode,true);
+                                    TSP->Color[Vert0],U0,V0,CLUTDestX,CLUTDestY,ColorMode,Node->FaceList[i].IsTextured);
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert1],
-                                    TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode,true);
+                                    TSP->Color[Vert1],U1,V1,CLUTDestX,CLUTDestY,ColorMode,Node->FaceList[i].IsTextured);
             TSPFillFaceVertexBuffer(VertexData,&VertexPointer,TSP->Vertex[Vert2],
-                                    TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode,true);
+                                    TSP->Color[Vert2],U2,V2,CLUTDestX,CLUTDestY,ColorMode,Node->FaceList[i].IsTextured);
             
             RenderingFace->VAOBufferOffset = Node->OpaqueFacesVAO->CurrentSize;
             RenderingFace->Flags |= TSP_FX_NONE;
@@ -1043,7 +1043,7 @@ void TSPDrawTransparentFaces(TSP_t *TSP,VRAM_t *VRAM)
         return;
     }
     
-    if( 0/*LevelEnableWireFrameMode->IValue*/ ) {
+    if( EnableWireFrameMode->IValue ) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -1078,7 +1078,7 @@ void TSPDrawTransparentFaces(TSP_t *TSP,VRAM_t *VRAM)
     glActiveTexture(GL_TEXTURE0 + 0);
     glBindTexture(GL_TEXTURE_2D,0);
     glDisable(GL_BLEND);
-    if( 0/*LevelEnableWireFrameMode->IValue*/ ) {
+    if( EnableWireFrameMode->IValue ) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 }
@@ -1185,7 +1185,6 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
     int CurrentFaceIndex;
     int PrevFilePosition;
     unsigned short PrimitiveType;
-    TSPUv_t Pad;
     int i;
     
     if( !TSP || !InFile ) {
@@ -1246,21 +1245,27 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
                     case 2:
                     case 4:
                     case 6:
-                        //Triangle, Texture On If 0 Off 4
                         fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V0,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V0),1,InFile);
                         fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V1,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V1),1,InFile);
                         fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V2,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V2),1,InFile);
+                        TSP->Node[i].FaceList[CurrentFaceIndex].IsTextured = false;
                         CurrentFaceIndex++;
                         break;
                     case 1:
                     case 3:
                     case 5:
                     case 7:
-                        //Quad, Texture On If 1 Off 5
-                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex],sizeof(TSPFace_t),1,InFile);
-                        fread(&Pad,sizeof(Pad),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V0,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V0),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V1,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V1),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].V2,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].V2),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].UV0,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].UV0),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].CBA,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].CBA),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].UV1,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].UV1),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].TSB,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].TSB),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].UV2,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].UV2),1,InFile);
+                        fread(&TSP->Node[i].FaceList[CurrentFaceIndex].Pad,sizeof(TSP->Node[i].FaceList[CurrentFaceIndex].Pad),1,InFile);
+                        TSP->Node[i].FaceList[CurrentFaceIndex].IsTextured = true;
                         TSPPrintFace(&TSP->Node[i].FaceList[CurrentFaceIndex]);
-                        DPrintf("Pad %i;%i\n",Pad.u,Pad.v);
                         CurrentFaceIndex++;
                         break;
                     default:
