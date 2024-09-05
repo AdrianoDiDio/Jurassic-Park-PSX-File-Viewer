@@ -203,7 +203,7 @@ void GUIDrawMainWindow(GUI_t *GUI,RenderObjectManager_t *RenderObjectManager,Vid
         if(!CurrentRenderObject) {
             igText("No RenderObject selected.");
         } else {
-            igText("Id:%u",CurrentRenderObject->Id, CurrentRenderObject->FileName);
+            igText("Id:%u",CurrentRenderObject->Id);
             igText("FileName:%s",BSDGetRenderObjectFileName(CurrentRenderObject));
             igText("Scale:%f;%f;%f",CurrentRenderObject->Scale[0],CurrentRenderObject->Scale[1],CurrentRenderObject->Scale[2]);
             igSeparator();

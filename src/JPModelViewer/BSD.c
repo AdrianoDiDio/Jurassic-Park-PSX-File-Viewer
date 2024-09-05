@@ -1802,6 +1802,10 @@ BSDRenderObject_t *BSDLoadStaticRenderObject(BSDRenderObjectElement_t RenderObje
     if( RenderObject->Id == 0 ) {
         assert(RenderObjectElement.TSPOffset > 0);
         RenderObject->TSP = TSPLoad(BSDFile, RenderObjectElement.TSPOffset + BSD_HEADER_SIZE);
+        if( !RenderObject->TSP ) {
+            DPrintf("BSDParseRenderObjectData:Failed to load TSP data for RenderObject %u\n",RenderObject->Id);
+            goto Failure;
+        }
     } else {
         if( !BSDParseRenderObjectVertexAndColorData(RenderObject,&RenderObjectElement,BSDFile) ) {
             DPrintf("BSDParseRenderObjectData:Failed to parse Vertex and Color data for RenderObject %u\n",RenderObject->Id);

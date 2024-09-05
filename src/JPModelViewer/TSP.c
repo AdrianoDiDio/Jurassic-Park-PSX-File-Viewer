@@ -1282,55 +1282,6 @@ int TSPReadNodeChunk(TSP_t *TSP,FILE *InFile,int TSPOffset)
     return 1;
 }
 
-int TSPReadFaceChunk(TSP_t *TSP,FILE *InFile)
-{
-    int Ret;
-    int i;
-    int NumFaces;
-    
-    if( !TSP || !InFile ) {
-        bool InvalidFile = (InFile == NULL ? true : false);
-        printf("TSPReadFaceChunk: Invalid %s\n",InvalidFile ? "file" : "tsp struct");
-        return 0;
-    }
-    if( TSP->Header.NumFaces == 0 ) {
-        DPrintf("TSPReadFaceChunk:0 faces found in file %s.\n",TSP->FName);
-        return 0;
-    }
-    //HACK:For the moment we calculate the number of faces by using the vertex offset
-    //     Ignoring the NumFace param in the TSP header
-    //     Since it doesn't cause any weird issue with the 3D rendering.
-    NumFaces = (TSP->Header.VertexOffset - TSP->Header.FaceOffset) / sizeof(TSPFace_t);
-    if( NumFaces != TSP->Header.NumFaces ) {
-        DPrintf("Fixed face count from %i to %i (size %li)\n",TSP->Header.NumFaces,NumFaces,sizeof(TSPFace_t));
-        TSP->Header.NumFaces = NumFaces;
-    }
-    TSP->Face = malloc(TSP->Header.NumFaces * sizeof(TSPFace_t));
-    if( !TSP->Face ) {
-        DPrintf("TSPReadFaceChunk:Failed to allocate memory for face array\n");
-        return 0;
-    }
-    for( i = 0; i < TSP->Header.NumFaces; i++ ) {
-        DPrintf("Reading Face %i at %li\n",i,ftell(InFile));
-        Ret = fread(&TSP->Face[i],sizeof(TSPFace_t),1,InFile);
-        if( Ret != 1 ) {
-            DPrintf("TSPReadFaceChunk:Early failure when reading face %i\n",i);
-            return 0;
-        }
-#if 1
-//     if( i <= 4 ) {
-        DPrintf(" -- Face %i --\n",i);
-        DPrintf("V0:%u\n",TSP->Face[i].V0);
-        DPrintf("V1:%u\n",TSP->Face[i].V1);
-        DPrintf("V2:%u\n",TSP->Face[i].V2);
-        DPrintf("CBA:%u\n",TSP->Face[i].CBA);
-        DPrintf("TSB:%u\n",TSP->Face[i].TSB);
-//     }
-#endif
-    }
-    return 1;
-}
-
 int TSPReadVertexChunk(TSP_t *TSP,FILE *InFile)
 {
     int Ret;
