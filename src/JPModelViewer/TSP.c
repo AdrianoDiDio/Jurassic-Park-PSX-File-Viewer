@@ -1740,7 +1740,7 @@ TSP_t *TSPLoad(FILE *TSPFile,int TSPOffset)
     if( !TSPReadVertexChunk(TSP,TSPFile) ) {
         goto Failure;
     }
-    assert(TSP->Header.NumB == 0);
+    fseek(TSPFile,TSP->Header.ColorOffset,SEEK_SET);
     assert(ftell(TSPFile) == TSP->Header.ColorOffset);
     if( !TSPReadColorChunk(TSP,TSPFile) ) {
         goto Failure;
